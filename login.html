@@ -31,13 +31,11 @@
     </script>
     <!-- Carga Font Awesome para los iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Enlace a tu CSS personalizado (para estilos que Tailwind no cubre o para overrides) -->
-    <link rel="stylesheet" href="login.css">
+    <!-- Enlace a tu CSS personalizado (si lo usas, debería estar en la carpeta 'css') -->
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gray-100 font-inter min-h-screen flex items-center justify-center p-4">
-    <!-- Contenedor principal para la página de login/registro -->
     <div class="relative w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden md:min-h-[600px] flex flex-col items-center justify-start py-8">
-        <!-- Parte superior con el logo y la curva -->
         <div class="absolute top-0 left-0 w-full h-48 bg-inventrak-yellow rounded-b-[50%] transform scale-x-150"></div>
         <div class="relative z-10 text-center mt-8">
             <h1 class="text-4xl font-bold text-inventrak-text-dark tracking-widest">
@@ -45,7 +43,6 @@
             </h1>
         </div>
 
-        <!-- Contenido principal de los formularios -->
         <div class="relative z-10 w-full px-8 mt-12 flex flex-col items-center">
             <!-- Formulario de Login -->
             <div id="loginPanel" class="w-full flex flex-col items-center">
@@ -114,6 +111,7 @@
         </div>
     </div>
 
-    <script src="login.js"></script>
+    <!-- Carga script.js al final del body -->
+    <script src="script.js"></script>
 </body>
 </html>

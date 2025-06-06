@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INVENTRAK - Dashboard</title>
+    <!-- Carga Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuración de Tailwind para colores personalizados -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'inventrak-yellow': '#E0FF7F',
+                        'inventrak-blue': '#ADD8E6',
+                        'inventrak-darkblue': '#4A90E2',
+                        'inventrak-green-light': '#D4F0BA',
+                        'inventrak-text-dark': '#333333',
+                        'inventrak-text-light': '#666666',
+                        'inventrak-card-bg': '#FFFFFF',
+                        'inventrak-loss': '#FFD4D4',
+                        'inventrak-gain': '#E0FF7F',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <!-- Carga Font Awesome para los iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Enlace a tu CSS personalizado -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-gray-100 font-inter flex flex-col min-h-screen">
+
+    <!-- Barra lateral (Sidebar) -->
+    <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-inventrak-yellow transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out z-30 rounded-r-3xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-8 lg:mb-10">
+            <h2 class="text-xl lg:text-2xl font-bold text-inventrak-text-dark tracking-wide">Menú</h2>
+            <button id="close-sidebar" class="lg:hidden text-inventrak-text-dark hover:text-inventrak-darkblue text-2xl focus:outline-none">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <nav>
+            <ul class="space-y-3 lg:space-y-4 text-inventrak-text-dark text-base lg:text-lg">
+                <li><a href="#" data-section="dashboard" class="sidebar-item active block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-home mr-2 lg:mr-3"></i> Dashboard</a></li>
+                <li><a href="#" data-section="create-inventory" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-plus-circle mr-2 lg:mr-3"></i> Crear Inventario</a></li>
+                <li><a href="#" data-section="view-inventories" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-boxes mr-2 lg:mr-3"></i> Inventarios Creados</a></li>
+                <li class="py-1 lg:py-2 border-t border-gray-300 my-3 lg:my-4"></li>
+                <li><a href="#" data-section="settings" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-cog mr-2 lg:mr-3"></i> Configuración (placeholder)</a></li>
+                <li><a href="#" id="logout-button" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-sign-out-alt mr-2 lg:mr-3"></i> Cerrar Sesión</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Overlay para la barra lateral en móvil -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden lg:hidden"></div>
+
+    <!-- Contenedor principal de la aplicación -->
+    <main class="flex-1 lg:ml-64 p-3 lg:p-8">
+        <!-- Encabezado superior del dashboard -->
+        <header class="flex justify-between items-center mb-5 lg:mb-6">
+            <button id="open-sidebar" class="lg:hidden p-1.5 rounded-lg bg-white shadow-md text-inventrak-text-dark text-lg focus:outline-none">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="flex items-center space-x-3 lg:space-x-4">
+                <div class="w-8 h-8 lg:w-10 lg:h-10 bg-gray-300 rounded-full flex items-center justify-center text-white text-base lg:text-lg overflow-hidden">
+                    <img src="https://placehold.co/40x40/cccccc/ffffff?text=User" alt="User Profile Placeholder" class="w-full h-full object-cover">
+                </div>
+                <span class="text-base lg:text-xl font-semibold text-inventrak-text-dark">Morning, <span id="user-name">Claudia</span>!</span>
+            </div>
+            <span class="text-base lg:text-xl font-semibold text-inventrak-text-dark" id="current-time">07:00 AM</span>
+        </header>
+
+        <!-- Secciones de Contenido -->
+        
+        <!-- Dashboard Section -->
+        <section id="dashboard-section" class="content-section active space-y-5 lg:space-y-6">
+            <!-- Tarjeta de Presupuesto Actual -->
+            <div class="bg-inventrak-blue rounded-2xl p-5 lg:p-6 shadow-lg flex flex-col justify-between h-40 lg:h-48">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base lg:text-lg font-medium text-inventrak-text-dark">Presupuesto actual</h3>
+                    <button class="text-base lg:text-lg opacity-75 hover:opacity-100 focus:outline-none text-inventrak-text-dark">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <p class="text-4xl lg:text-5xl font-bold text-inventrak-yellow">$<span id="current-budget">56,890.00</span></p>
+                <div class="flex justify-end space-x-2 lg:space-x-3">
+                    <button class="bg-black text-white px-3 py-1.5 rounded-xl text-xs lg:text-sm font-medium hover:bg-gray-800 transition duration-200">
+                        Top Up
+                    </button>
+                    <button class="bg-white text-inventrak-text-dark px-3 py-1.5 rounded-xl text-xs lg:text-sm font-medium hover:bg-gray-200 transition duration-200">
+                        Cambiar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sección de Vista de Entradas y Salidas -->
+            <div class="bg-inventrak-card-bg rounded-2xl p-5 lg:p-6 shadow-lg">
+                <div class="flex items-center justify-between mb-3 lg:mb-4">
+                    <h3 class="text-base lg:text-lg font-medium text-inventrak-text-dark">TOTAL</h3>
+                    <button id="toggle-in-out" class="text-base lg:text-lg hover:text-inventrak-text-dark transition duration-200 text-inventrak-text-light">
+                        <i class="fas fa-chevron-down"></i> View In & Out
+                    </button>
+                </div>
+                <div id="in-out-list" class="space-y-2 lg:space-y-3 mt-3 lg:mt-4 hidden">
+                    <!-- Las entradas/salidas se renderizarán aquí por JS -->
+                </div>
+            </div>
+
+            <!-- Sección de Pérdidas y Ganancias -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6">
+                <!-- Pérdidas Totales -->
+                <div class="bg-inventrak-loss rounded-2xl p-5 lg:p-6 shadow-lg">
+                    <h3 class="text-base lg:text-lg font-medium mb-1.5 lg:mb-2 text-inventrak-text-dark">Pérdidas totales</h3>
+                    <p class="text-2xl lg:text-3xl font-bold text-red-600">$<span id="total-losses">2,890.00</span></p>
+                    <p class="text-xs lg:text-sm mt-0.5 lg:mt-1 text-inventrak-text-light">mes</p>
+                </div>
+                <!-- Ganancias Totales -->
+                <div class="bg-inventrak-gain rounded-2xl p-5 lg:p-6 shadow-lg">
+                    <h3 class="text-base lg:text-lg font-medium mb-1.5 lg:mb-2 text-inventrak-text-dark">Ganancias totales</h3>
+                    <p class="text-2xl lg:text-3xl font-bold text-inventrak-darkblue">$<span id="total-gains">1,067.00</span></p>
+                    <p class="text-xs lg:text-sm mt-0.5 lg:mt-1 text-inventrak-text-light">mes</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección de Crear Inventario -->
+        <section id="create-inventory-section" class="content-section hidden space-y-5 lg:space-y-6">
+            <h2 class="text-2xl lg:text-3xl font-bold text-inventrak-text-dark mb-5 lg:mb-6">Crear Inventario</h2>
+            <div class="bg-inventrak-card-bg rounded-2xl p-5 lg:p-6 shadow-lg">
+                <form id="createInventoryForm" class="space-y-3 lg:space-y-4">
+                    <div>
+                        <label for="newInventoryName" class="block text-inventrak-text-dark text-xs lg:text-sm font-medium mb-1">Nombre del Inventario:</label>
+                        <input type="text" id="newInventoryName" required
+                               class="w-full py-1.5 px-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue text-sm">
+                    </div>
+                    <div>
+                        <label for="newInventoryInitialAmount" class="block text-inventrak-text-dark text-xs lg:text-sm font-medium mb-1">Monto Inicial (Presupuesto para este inventario):</label>
+                        <input type="number" id="newInventoryInitialAmount" step="0.01" required
+                               class="w-full py-1.5 px-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue text-sm">
+                    </div>
+                    <button type="submit" class="bg-inventrak-darkblue text-white px-5 py-2.5 rounded-xl font-bold text-base lg:text-lg hover:bg-inventrak-blue transition duration-300">
+                        Crear Inventario
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Sección de Inventarios Creados -->
+        <section id="view-inventories-section" class="content-section hidden space-y-5 lg:space-y-6">
+            <h2 class="text-2xl lg:text-3xl font-bold text-inventrak-text-dark mb-5 lg:mb-6">Inventarios Creados</h2>
+            <div class="bg-inventrak-card-bg rounded-2xl p-5 lg:p-6 shadow-lg">
+                <div id="inventories-list" class="space-y-3 lg:space-y-4">
+                    <!-- Los inventarios creados se listarán aquí por JS -->
+                    <p id="no-inventories-message" class="text-inventrak-text-light text-center text-sm">No hay inventarios creados aún.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección de Configuración (placeholder, sin lógica aún) -->
+        <section id="settings-section" class="content-section hidden space-y-5 lg:space-y-6">
+            <h2 class="text-2xl lg:text-3xl font-bold text-inventrak-text-dark mb-5 lg:mb-6">Configuración (Placeholder)</h2>
+            <div class="bg-inventrak-card-bg rounded-2xl p-5 lg:p-6 shadow-lg">
+                <p class="text-inventrak-text-dark text-sm lg:text-base">Esta sección estará disponible en futuras actualizaciones.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Barra de Navegación Inferior para Móviles -->
+    <footer class="lg:hidden fixed bottom-0 left-0 w-full bg-white shadow-xl py-2 z-40 rounded-t-2xl">
+        <nav class="flex justify-around items-center h-full text-inventrak-text-light text-lg">
+            <a href="#" data-section="dashboard" class="bottom-nav-item active flex flex-col items-center p-1.5 rounded-lg text-inventrak-darkblue">
+                <i class="fas fa-home"></i>
+                <span class="text-xs">Home</span>
+            </a>
+            <a href="#" data-section="view-inventories" class="bottom-nav-item flex flex-col items-center p-1.5 rounded-lg hover:text-inventrak-darkblue">
+                <i class="fas fa-wallet"></i>
+                <span class="text-xs">Inventarios</span>
+            </a>
+            <a href="#" data-section="create-inventory" class="bottom-nav-item flex flex-col items-center p-1.5 rounded-lg hover:text-inventrak-darkblue">
+                <i class="fas fa-edit"></i>
+                <span class="text-xs">Crear</span>
+            </a>
+            <a href="#" data-section="settings" class="bottom-nav-item flex flex-col items-center p-1.5 rounded-lg hover:text-inventrak-darkblue">
+                <i class="fas fa-user-circle"></i>
+                <span class="text-xs">Perfil</span>
+            </a>
+        </nav>
+    </footer>
+
+ 
+</body>
+   <!-- Carga script.js al final del body -->
+    <script src="script.js"></script>
+</html>
