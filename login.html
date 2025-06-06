@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INVENTRAK - Iniciar Sesión / Registro</title>
+    <!-- Carga Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuración de Tailwind para colores personalizados -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'inventrak-yellow': '#E0FF7F',
+                        'inventrak-blue': '#ADD8E6',
+                        'inventrak-darkblue': '#4A90E2',
+                        'inventrak-green-light': '#D4F0BA',
+                        'inventrak-text-dark': '#333333',
+                        'inventrak-text-light': '#666666',
+                        'inventrak-card-bg': '#FFFFFF',
+                        'inventrak-loss': '#FFD4D4',
+                        'inventrak-gain': '#E0FF7F',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <!-- Carga Font Awesome para los iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Enlace a tu CSS personalizado (para estilos que Tailwind no cubre o para overrides) -->
+    <link rel="stylesheet" href="login.css">
+</head>
+<body class="bg-gray-100 font-inter min-h-screen flex items-center justify-center p-4">
+    <!-- Contenedor principal para la página de login/registro -->
+    <div class="relative w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden md:min-h-[600px] flex flex-col items-center justify-start py-8">
+        <!-- Parte superior con el logo y la curva -->
+        <div class="absolute top-0 left-0 w-full h-48 bg-inventrak-yellow rounded-b-[50%] transform scale-x-150"></div>
+        <div class="relative z-10 text-center mt-8">
+            <h1 class="text-4xl font-bold text-inventrak-text-dark tracking-widest">
+                INVENT<span class="text-inventrak-darkblue">R</span>AK
+            </h1>
+        </div>
+
+        <!-- Contenido principal de los formularios -->
+        <div class="relative z-10 w-full px-8 mt-12 flex flex-col items-center">
+            <!-- Formulario de Login -->
+            <div id="loginPanel" class="w-full flex flex-col items-center">
+                <h2 class="text-3xl font-semibold text-inventrak-text-dark mb-8">¡Bienvenido!</h2>
+                <form id="loginForm" class="w-full space-y-6">
+                    <div class="relative">
+                        <input type="email" id="loginEmail" placeholder="correo@ejemplo.com"
+                               class="w-full py-3 pl-12 pr-4 rounded-xl bg-inventrak-yellow text-inventrak-text-dark placeholder-inventrak-text-light focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue"
+                               required>
+                        <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-inventrak-text-light"></i>
+                    </div>
+                    <div class="relative">
+                        <input type="password" id="loginPassword" placeholder="Contraseña"
+                               class="w-full py-3 pl-12 pr-4 rounded-xl bg-inventrak-yellow text-inventrak-text-dark placeholder-inventrak-text-light focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue"
+                               required>
+                        <i class="fas fa-key absolute left-4 top-1/2 -translate-y-1/2 text-inventrak-text-light"></i>
+                    </div>
+                    <a href="#" class="block text-right text-inventrak-text-light text-sm hover:underline">¿Olvidaste tu contraseña?</a>
+                    <button type="submit"
+                            class="w-full py-3 rounded-xl bg-inventrak-blue text-white font-bold text-lg shadow-md hover:bg-inventrak-darkblue transition duration-300">
+                        Iniciar sesión
+                    </button>
+                </form>
+                <p class="mt-8 text-inventrak-text-light text-sm">
+                    ¿Aún no tienes una cuenta? <a href="#" id="showRegister" class="text-inventrak-darkblue font-semibold hover:underline">Regístrate aquí</a>
+                </p>
+            </div>
+
+            <!-- Formulario de Registro (inicialmente oculto) -->
+            <div id="registerPanel" class="w-full flex flex-col items-center hidden">
+                <h2 class="text-3xl font-semibold text-inventrak-text-dark mb-8">Crear Cuenta</h2>
+                <form id="registerForm" class="w-full space-y-6">
+                    <div class="relative">
+                        <input type="text" id="registerName" placeholder="Tu Nombre"
+                               class="w-full py-3 pl-12 pr-4 rounded-xl bg-inventrak-yellow text-inventrak-text-dark placeholder-inventrak-text-light focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue"
+                               required>
+                        <i class="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-inventrak-text-light"></i>
+                    </div>
+                    <div class="relative">
+                        <input type="email" id="registerEmail" placeholder="correo@ejemplo.com"
+                               class="w-full py-3 pl-12 pr-4 rounded-xl bg-inventrak-yellow text-inventrak-text-dark placeholder-inventrak-text-light focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue"
+                               required>
+                        <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-inventrak-text-light"></i>
+                    </div>
+                    <div class="relative">
+                        <input type="password" id="registerPassword" placeholder="Contraseña"
+                               class="w-full py-3 pl-12 pr-4 rounded-xl bg-inventrak-yellow text-inventrak-text-dark placeholder-inventrak-text-light focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue"
+                               required>
+                        <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-inventrak-text-light"></i>
+                    </div>
+                    <div class="relative">
+                        <input type="password" id="confirmPassword" placeholder="Confirmar Contraseña"
+                               class="w-full py-3 pl-12 pr-4 rounded-xl bg-inventrak-yellow text-inventrak-text-dark placeholder-inventrak-text-light focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue"
+                               required>
+                        <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-inventrak-text-light"></i>
+                    </div>
+                    <button type="submit"
+                            class="w-full py-3 rounded-xl bg-inventrak-darkblue text-white font-bold text-lg shadow-md hover:bg-inventrak-blue transition duration-300">
+                        Registrarse
+                    </button>
+                </form>
+                <p class="mt-8 text-inventrak-text-light text-sm">
+                    ¿Ya tienes una cuenta? <a href="#" id="showLogin" class="text-inventrak-darkblue font-semibold hover:underline">Inicia sesión aquí</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="login.js"></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+/* Importa Google Fonts - Inter */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* Puedes añadir aquí overrides de Tailwind o estilos personalizados si es necesario */
+/* Por ejemplo, para la curva de la página de login, ya está manejada con Tailwind,
+   pero si necesitas algo muy específico no cubierto por Tailwind, lo pondrías aquí. */
+
+/* Estilos para el scrollbar (opcional, para una apariencia más limpia) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Ocultar scrollbar por defecto en algunos navegadores */
+body {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+body::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera*/
+}
+
+/* Animación de la barra lateral (solo para demostración si Tailwind no lo hace perfecto) */
+/* La clase 'translate-x-full' y '-translate-x-full' de Tailwind ya manejan esto.
+   No se requiere CSS adicional a menos que desees una animación más compleja. */
