@@ -31,7 +31,7 @@
     </script>
     <!-- Carga Font Awesome para los iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Enlace a tu CSS personalizado - RUTA CORREGIDA -->
+    <!-- Enlace a tu CSS personalizado -->
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="bg-gray-100 font-inter flex flex-col min-h-screen">
@@ -50,6 +50,9 @@
                 <li><a href="#" data-section="create-inventory" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-plus-circle mr-2 lg:mr-3"></i> Crear Inventario</a></li>
                 <li><a href="#" data-section="view-inventories" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-boxes mr-2 lg:mr-3"></i> Inventarios Creados</a></li>
                 <li class="py-1 lg:py-2 border-t border-gray-300 my-3 lg:my-4"></li>
+                <!-- Secciones de Balance y Averías pueden ser añadidas en el futuro -->
+                <!-- <li><a href="#" data-section="balance" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-balance-scale mr-2 lg:mr-3"></i> Balance</a></li> -->
+                <!-- <li><a href="#" data-section="issues" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-exclamation-triangle mr-2 lg:mr-3"></i> Averías</a></li> -->
                 <li><a href="#" data-section="settings" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-cog mr-2 lg:mr-3"></i> Configuración (placeholder)</a></li>
                 <li><a href="#" id="logout-button" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-sign-out-alt mr-2 lg:mr-3"></i> Cerrar Sesión</a></li>
             </ul>
@@ -115,16 +118,22 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6">
                 <!-- Pérdidas Totales -->
                 <div class="bg-inventrak-loss rounded-2xl p-5 lg:p-6 shadow-lg">
-                    <h3 class="text-base lg:text-lg font-medium mb-1.5 lg:mb-2 text-inventrak-text-dark">Pérdidas totales</h3>
+                    <h3 class="text-base lg:text-lg font-medium mb-1.5 lg:mb-2 text-inventrak-text-dark">Pérdidas totales (Mes)</h3>
                     <p class="text-2xl lg:text-3xl font-bold text-red-600">$<span id="total-losses">2,890.00</span></p>
                     <p class="text-xs lg:text-sm mt-0.5 lg:mt-1 text-inventrak-text-light">mes</p>
                 </div>
                 <!-- Ganancias Totales -->
                 <div class="bg-inventrak-gain rounded-2xl p-5 lg:p-6 shadow-lg">
-                    <h3 class="text-base lg:text-lg font-medium mb-1.5 lg:mb-2 text-inventrak-text-dark">Ganancias totales</h3>
+                    <h3 class="text-base lg:text-lg font-medium mb-1.5 lg:mb-2 text-inventrak-text-dark">Ganancias totales (Mes)</h3>
                     <p class="text-2xl lg:text-3xl font-bold text-inventrak-darkblue">$<span id="total-gains">1,067.00</span></p>
                     <p class="text-xs lg:text-sm mt-0.5 lg:mt-1 text-inventrak-text-light">mes</p>
                 </div>
+            </div>
+
+            <!-- Sección de Resumen Financiero con Comentarios -->
+            <div class="bg-inventrak-card-bg rounded-2xl p-5 lg:p-6 shadow-lg">
+                <h3 class="text-base lg:text-lg font-medium mb-3 lg:mb-4 text-inventrak-text-dark">Resumen Financiero</h3>
+                <p id="financial-summary-comment" class="text-inventrak-text-dark text-base lg:text-lg italic text-center"></p>
             </div>
         </section>
 
@@ -161,11 +170,141 @@
             </div>
         </section>
 
-        <!-- Sección de Configuración (placeholder, sin lógica aún) -->
-        <section id="settings-section" class="content-section hidden space-y-5 lg:space-y-6">
-            <h2 class="text-2xl lg:text-3xl font-bold text-inventrak-text-dark mb-5 lg:mb-6">Configuración (Placeholder)</h2>
+        <!-- Sección: Gestionar Inventario (para CRUD de Productos) -->
+        <section id="manage-inventory-section" class="content-section hidden space-y-5 lg:space-y-6">
+            <button id="backToInventoriesBtn" class="bg-gray-300 text-inventrak-text-dark px-3 py-1.5 rounded-xl mb-3 lg:mb-4 hover:bg-gray-400 transition duration-200 text-sm">
+                <i class="fas fa-arrow-left mr-1 lg:mr-2"></i> Volver a Inventarios
+            </button>
+
+            <h2 class="text-2xl lg:text-3xl font-bold text-inventrak-text-dark mb-3 lg:mb-4">Gestionar Inventario: <span id="currentInventoryName"></span></h2>
             <div class="bg-inventrak-card-bg rounded-2xl p-5 lg:p-6 shadow-lg">
-                <p class="text-inventrak-text-dark text-sm lg:text-base">Esta sección estará disponible en futuras actualizaciones.</p>
+                <h3 class="text-xl lg:text-2xl font-semibold text-inventrak-text-dark mb-3 lg:mb-4">Detalles del Inventario</h3>
+                <p class="text-sm lg:text-base"><strong>Presupuesto Inicial:</strong> $<span id="managedInventoryInitialAmount">0.00</span></p>
+                <p class="text-sm lg:text-base"><strong>Fecha de Creación:</strong> <span id="managedInventoryCreationDate"></span></p>
+                <div class="flex justify-end space-x-2 mt-4">
+                    <button id="editInventoryDetailsBtn" class="bg-inventrak-darkblue text-white px-3 py-1.5 rounded-lg text-sm hover:bg-inventrak-blue transition duration-200">
+                        <i class="fas fa-edit mr-1"></i> Editar Detalles
+                    </button>
+                    <button id="deleteCurrentInventoryBtn" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-red-600 transition duration-200">
+                        <i class="fas fa-trash-alt mr-1"></i> Eliminar Inventario
+                    </button>
+                </div>
+            </div>
+
+            <!-- Formulario de Añadir/Editar Producto -->
+            <div class="bg-inventrak-card-bg rounded-2xl p-5 lg:p-6 shadow-lg">
+                <h3 class="text-xl lg:text-2xl font-semibold text-inventrak-text-dark mb-3 lg:mb-4" id="productFormTitle">Añadir Nuevo Producto</h3>
+                <form id="productForm" class="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4">
+                    <div>
+                        <label for="productName" class="block text-inventrak-text-dark text-xs lg:text-sm font-medium mb-1">Nombre Producto:</label>
+                        <input type="text" id="productName" required class="w-full py-1.5 px-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue text-sm">
+                    </div>
+                    <div>
+                        <label for="productCategory" class="block text-inventrak-text-dark text-xs lg:text-sm font-medium mb-1">Categoría:</label>
+                        <input type="text" id="productCategory" class="w-full py-1.5 px-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue text-sm">
+                    </div>
+                    <div>
+                        <label for="productSKU" class="block text-inventrak-text-dark text-xs lg:text-sm font-medium mb-1">SKU/Código:</label>
+                        <input type="text" id="productSKU" class="w-full py-1.5 px-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue text-sm">
+                    </div>
+                    <div>
+                        <label for="productDescription" class="block text-inventrak-text-dark text-xs lg:text-sm font-medium mb-1">Descripción:</label>
+                        <textarea id="productDescription" rows="2" class="w-full py-1.5 px-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue text-sm"></textarea>
+                    </div>
+                    <div>
+                        <label for="productCost" class="block text-inventrak-text-dark text-xs lg:text-sm font-medium mb-1">Precio de Compra (Costo):</label>
+                        <input type="number" id="productCost" step="0.01" required class="w-full py-1.5 px-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue text-sm">
+                    </div>
+                    <div>
+                        <label for="productSalePrice" class="block text-inventrak-text-dark text-xs lg:text-sm font-medium mb-1">Precio de Venta:</label>
+                        <input type="number" id="productSalePrice" step="0.01" required class="w-full py-1.5 px-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue text-sm">
+                    </div>
+                    <div>
+                        <label for="productStock" class="block text-inventrak-text-dark text-xs lg:text-sm font-medium mb-1">Cantidad en Stock:</label>
+                        <input type="number" id="productStock" required class="w-full py-1.5 px-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue text-sm">
+                    </div>
+                    <div>
+                        <label for="productUnit" class="block text-inventrak-text-dark text-xs lg:text-sm font-medium mb-1">Unidad de Medida:</label>
+                        <input type="text" id="productUnit" placeholder="ej. unidad, kg, litro" class="w-full py-1.5 px-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue text-sm">
+                    </div>
+                    <div>
+                        <label for="productLocation" class="block text-inventrak-text-dark text-xs lg:text-sm font-medium mb-1">Ubicación:</label>
+                        <input type="text" id="productLocation" class="w-full py-1.5 px-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue text-sm">
+                    </div>
+                    <div>
+                        <label for="productSupplier" class="block text-inventrak-text-dark text-xs lg:text-sm font-medium mb-1">Proveedor:</label>
+                        <input type="text" id="productSupplier" class="w-full py-1.5 px-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue text-sm">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="productExpiryDate" class="block text-inventrak-text-dark text-xs lg:text-sm font-medium mb-1">Fecha de Caducidad (opcional):</label>
+                        <input type="date" id="productExpiryDate" class="w-full py-1.5 px-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-inventrak-darkblue text-sm">
+                    </div>
+                    <div class="md:col-span-2 flex justify-end space-x-2 lg:space-x-3">
+                        <button type="reset" id="cancelEditProductBtn" class="bg-gray-300 text-inventrak-text-dark px-5 py-2.5 rounded-xl font-bold text-base lg:text-lg hover:bg-gray-400 transition duration-300 hidden">
+                            Cancelar Edición
+                        </button>
+                        <button type="submit" class="bg-inventrak-darkblue text-white px-5 py-2.5 rounded-xl font-bold text-base lg:text-lg hover:bg-inventrak-blue transition duration-300">
+                            Guardar Producto
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Lista de Productos -->
+            <div class="bg-inventrak-card-bg rounded-2xl p-5 lg:p-6 shadow-lg">
+                <h3 class="text-xl lg:text-2xl font-semibold text-inventrak-text-dark mb-3 lg:mb-4">Productos en Inventario</h3>
+                <div id="products-list" class="space-y-2 lg:space-y-3">
+                    <!-- Los productos se listarán aquí por JS -->
+                    <p id="no-products-message" class="text-inventrak-text-light text-center text-sm">No hay productos en este inventario.</p>
+                </div>
+            </div>
+
+            <!-- Sección de Balances para este Inventario -->
+            <div class="bg-inventrak-card-bg rounded-2xl p-5 lg:p-6 shadow-lg">
+                <h3 class="text-xl lg:text-2xl font-semibold text-inventrak-text-dark mb-3 lg:mb-4">Balances del Inventario</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 lg:gap-4">
+                    <div class="bg-inventrak-yellow p-3 lg:p-4 rounded-xl shadow-sm">
+                        <h4 class="font-medium text-inventrak-text-dark text-base lg:text-lg">Balance Diario</h4>
+                        <p class="text-xl lg:text-2xl font-bold text-inventrak-darkblue" id="dailyBalance">$0.00</p>
+                    </div>
+                    <div class="bg-inventrak-blue p-3 lg:p-4 rounded-xl shadow-sm">
+                        <h4 class="font-medium text-inventrak-text-dark text-base lg:text-lg">Balance Mensual</h4>
+                        <p class="text-xl lg:text-2xl font-bold text-inventrak-yellow" id="monthlyBalance">$0.00</p>
+                    </div>
+                    <div class="bg-inventrak-green-light p-3 lg:p-4 rounded-xl shadow-sm">
+                        <h4 class="font-medium text-inventrak-text-dark text-base lg:text-lg">Balance Anual</h4>
+                        <p class="text-xl lg:text-2xl font-bold text-inventrak-darkblue" id="annualBalance">$0.00</p>
+                    </div>
+                </div>
+                <div class="mt-3 lg:mt-4">
+                    <h4 class="font-medium text-inventrak-text-dark mb-1.5 lg:mb-2 text-base lg:text-lg">Movimientos Recientes</h4>
+                    <div id="recentTransactionsList" class="space-y-1.5 lg:space-y-2">
+                        <p class="text-inventrak-text-light text-xs lg:text-sm">No hay movimientos recientes.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Secciones de Balance General y Averías (placeholders) -->
+        <section id="balance-section" class="content-section hidden space-y-5 lg:space-y-6">
+            <h2 class="text-2xl lg:text-3xl font-bold text-inventrak-text-dark mb-5 lg:mb-6">Balance General (Placeholder)</h2>
+            <div class="bg-inventrak-card-bg rounded-2xl p-5 lg:p-6 shadow-lg">
+                <p class="text-inventrak-text-dark text-sm lg:text-base">Aquí se mostrará el balance general de todos los inventarios. (Próximamente)</p>
+            </div>
+        </section>
+
+        <section id="issues-section" class="content-section hidden space-y-5 lg:space-y-6">
+            <h2 class="text-2xl lg:text-3xl font-bold text-inventrak-text-dark mb-5 lg:mb-6">Averías Reportadas (Placeholder)</h2>
+            <div class="bg-inventrak-card-bg rounded-2xl p-5 lg:p-6 shadow-lg">
+                <p class="text-inventrak-text-dark text-sm lg:text-base">Aquí se gestionarán las averías. (Próximamente)</p>
+            </div>
+        </section>
+
+        <!-- Sección de Configuración (placeholder) -->
+        <section id="settings-section" class="content-section hidden space-y-5 lg:space-y-6">
+            <h2 class="text-2xl lg:text-3xl font-bold text-inventrak-text-dark mb-5 lg:mb-6">Configuración</h2>
+            <div class="bg-inventrak-card-bg rounded-2xl p-5 lg:p-6 shadow-lg">
+                <p class="text-inventrak-text-dark text-sm lg:text-base">versión 0.1</p>
             </div>
         </section>
     </main>

@@ -1,14 +1,14 @@
 /* Puedes añadir aquí cualquier estilo CSS personalizado que no se pueda lograr con Tailwind o para sobrescribir. */
 /* Por ejemplo, para Inter font si no se carga automáticamente o si quieres un fallback más específico */
- @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'); */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'); */
 
- 
+/* Algunos estilos generales que podrías querer mantener si no están en Tailwind: */
  body {
     font-family: 'Inter', sans-serif;
 } 
 
- 
- ::-webkit-scrollbar {
+/* Estilos para el scrollbar si quieres personalizarlo */
+::-webkit-scrollbar {
     width: 8px;
 }
 ::-webkit-scrollbar-track {
@@ -22,3 +22,6 @@
 ::-webkit-scrollbar-thumb:hover {
     background: #4A90E2;
 } 
+
+/* No necesitas añadir estilos específicos para cada sección aquí,
+   ya que Tailwind CSS se encarga de la mayoría de ellos directamente en el HTML. */
