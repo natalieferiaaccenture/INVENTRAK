@@ -5,9 +5,9 @@
 // Espera a que todo el contenido del DOM esté cargado antes de ejecutar el script
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM completamente cargado. Iniciando script.js');
+    console.log('Tipo de d3 al inicio del script (en DOMContentLoaded):', typeof d3);
 
     // --- Paleta de Colores de Inventrak para D3.js ---
-    // Usaremos un mapeo de nombres a valores hexadecimales para consistencia.
     const inventrakColors = {
         'yellow': '#E0FF7F',
         'blue': '#ADD8E6',
@@ -16,81 +16,82 @@ document.addEventListener('DOMContentLoaded', () => {
         'text-dark': '#333333',
         'text-light': '#666666',
         'card-bg': '#FFFFFF',
-        'loss': '#FFD4D4', // Rojo claro para pérdidas
-        'gain': '#E0FF7F', // Amarillo/Verde para ganancias
-        // Algunos colores adicionales o variaciones para gráficos
-        'primary-accent': '#4A90E2', // darkblue
-        'secondary-accent': '#ADD8E6', // blue
-        'positive': '#22C55E', // un verde más fuerte para barras positivas
-        'negative': '#EF4444', // un rojo más fuerte para barras negativas
-        'gray-light': '#F3F4F6', // Similar a bg-gray-100
+        'loss': '#FFD4D4',
+        'gain': '#E0FF7F',
+        'primary-accent': '#4A90E2',
+        'secondary-accent': '#ADD8E6',
+        'positive': '#22C55E',
+        'negative': '#EF4444',
+        'gray-light': '#F3F4F6',
         'gray-medium': '#9CA3AF',
         'gray-dark': '#4B5563'
     };
 
-    // Crear una escala de color para D3 que use nuestra paleta
-    // Esta escala es flexible y puede expandirse con más colores si hay muchas categorías.
-    const colorScale = d3.scaleOrdinal()
-        .range([
-            inventrakColors['darkblue'],
-            inventrakColors['yellow'],
-            inventrakColors['blue'],
-            inventrakColors['green-light'],
-            inventrakColors['gray-medium'],
-            inventrakColors['positive'],
-            inventrakColors['negative'],
-            inventrakColors['text-dark']
-        ]);
-
-
     // --- Estado de la Aplicación (Datos almacenados en localStorage) ---
-    let inventrakData = JSON.parse(localStorage.getItem('inventrakData')) || {
-        users: [{ email: "test@inventrak.com", password: "password123", name: "Claudia" }],
-        currentUser: null,
-        budget: 50000.00,
-        losses: 0.00,
-        gains: 0.00,
-        inventories: [
-            {
-                id: 1,
-                name: "INVENTARIO PRINCIPAL",
-                initialAmount: 10000.00,
-                creationDate: "01/01/2025",
-                products: [
-                    { id: 101, name: "Leche Entera", category: "Lácteos", sku: "LE001", description: "Leche de vaca semidesnatada", cost: 2.00, salePrice: 2.50, stock: 50, unit: "litro", location: "Pasillo 1", supplier: "Proveedor Lácteo A", expiryDate: "2025-12-31", lastUpdated: "05/06/2025" },
-                    { id: 102, name: "Pan Integral", category: "Panadería", sku: "PI002", description: "Pan de molde 500g", cost: 1.50, salePrice: 2.00, stock: 100, unit: "unidad", location: "Panadería", supplier: "Panificadora B", expiryDate: "2025-06-15", lastUpdated: "05/06/2025" },
-                    { id: 103, name: "Manzanas Rojas", category: "Frutas", sku: "MR003", description: "Manzanas frescas por kilo", cost: 0.80, salePrice: 1.20, stock: 80, unit: "kg", location: "Verduras", supplier: "Frutas del Campo", expiryDate: "2025-06-20", lastUpdated: "05/06/2025" },
-                    { id: 104, name: "Detergente Líquido", category: "Limpieza", sku: "DL004", description: "Detergente para ropa 3L", cost: 5.00, salePrice: 7.50, stock: 30, unit: "botella", location: "Pasillo 5", supplier: "Químicos ABC", expiryDate: "2026-01-31", lastUpdated: "05/06/2025" }
-                ],
-                transactions: [
-                    { id: 1, productId: null, type: "creacion_inventario", quantity: 1, price: 10000.00, date: "01/01/2025", time: "09:00", notes: "Fondo inicial para inventario principal", totalCost: 10000.00 },
-                    { id: 2, productId: 101, type: "compra", quantity: 50, price: 100.00, totalCost: 100.00, date: "05/06/2025", time: "10:00", notes: "Compra de 50 leches" },
-                    { id: 3, productId: 102, type: "compra", quantity: 100, price: 150.00, totalCost: 150.00, date: "05/06/2025", time: "10:05", notes: "Compra de 100 panes" },
-                    { id: 4, productId: 101, type: "venta", quantity: 5, price: 12.50, totalCost: 10.00, date: "05/06/2025", time: "10:30", notes: "Venta de 5 leches" },
-                    { id: 5, productId: 102, type: "venta", quantity: 10, price: 20.00, totalCost: 15.00, date: "05/06/2025", time: "11:00", notes: "Venta de 10 panes" },
-                    { id: 6, productId: 103, type: "compra", quantity: 80, price: 64.00, totalCost: 64.00, date: "05/05/2025", time: "12:00", notes: "Compra de 80kg manzanas" },
-                    { id: 7, productId: 103, type: "venta", quantity: 20, price: 24.00, totalCost: 16.00, date: "05/05/2025", time: "13:00", notes: "Venta de 20kg manzanas" },
-                    { id: 8, productId: 104, type: "compra", quantity: 30, price: 150.00, totalCost: 150.00, date: "05/04/2025", time: "14:00", notes: "Compra de 30 detergentes" }
+    let inventrakData;
+    try {
+        const storedData = localStorage.getItem('inventrakData');
+        if (storedData) {
+            inventrakData = JSON.parse(storedData);
+            console.log('Datos cargados de localStorage:', inventrakData);
+        } else {
+            console.log('No se encontraron datos en localStorage. Inicializando con datos por defecto.');
+            inventrakData = {
+                users: [{ email: "test@inventrak.com", password: "password123", name: "Claudia" }],
+                currentUser: null,
+                budget: 50000.00,
+                losses: 0.00,
+                gains: 0.00,
+                inventories: [
+                    {
+                        id: 1,
+                        name: "INVENTARIO PRINCIPAL",
+                        initialAmount: 10000.00,
+                        creationDate: "01/01/2025",
+                        products: [
+                            { id: 101, name: "Leche Entera", category: "Lácteos", sku: "LE001", description: "Leche de vaca semidesnatada", cost: 2.00, salePrice: 2.50, stock: 50, unit: "litro", location: "Pasillo 1", supplier: "Proveedor Lácteo A", expiryDate: "2025-12-31", lastUpdated: "05/06/2025" },
+                            { id: 102, name: "Pan Integral", category: "Panadería", sku: "PI002", description: "Pan de molde 500g", cost: 1.50, salePrice: 2.00, stock: 100, unit: "unidad", location: "Panadería", supplier: "Panificadora B", expiryDate: "2025-06-15", lastUpdated: "05/06/2025" },
+                            { id: 103, name: "Manzanas Rojas", category: "Frutas", sku: "MR003", description: "Manzanas frescas por kilo", cost: 0.80, salePrice: 1.20, stock: 80, unit: "kg", location: "Verduras", supplier: "Frutas del Campo", expiryDate: "2025-06-20", lastUpdated: "05/06/2025" },
+                            { id: 104, name: "Detergente Líquido", category: "Limpieza", sku: "DL004", description: "Detergente para ropa 3L", cost: 5.00, salePrice: 7.50, stock: 30, unit: "botella", location: "Pasillo 5", supplier: "Químicos ABC", expiryDate: "2026-01-31", lastUpdated: "05/06/2025" }
+                        ],
+                        transactions: [
+                            { id: 1, productId: null, type: "creacion_inventario", quantity: 1, price: 10000.00, date: "01/01/2025", time: "09:00", notes: "Fondo inicial para inventario principal", totalCost: 10000.00 },
+                            { id: 2, productId: 101, type: "compra", quantity: 50, price: 100.00, totalCost: 100.00, date: "05/06/2025", time: "10:00", notes: "Compra de 50 leches" },
+                            { id: 3, productId: 102, type: "compra", quantity: 100, price: 150.00, totalCost: 150.00, date: "05/06/2025", time: "10:05", notes: "Compra de 100 panes" },
+                            { id: 4, productId: 101, type: "venta", quantity: 5, price: 12.50, totalCost: 10.00, date: "05/06/2025", time: "10:30", notes: "Venta de 5 leches" },
+                            { id: 5, productId: 102, type: "venta", quantity: 10, price: 20.00, totalCost: 15.00, date: "05/06/2025", time: "11:00", notes: "Venta de 10 panes" },
+                            { id: 6, productId: 103, type: "compra", quantity: 80, price: 64.00, totalCost: 64.00, date: "05/05/2025", time: "12:00", notes: "Compra de 80kg manzanas" },
+                            { id: 7, productId: 103, type: "venta", quantity: 20, price: 24.00, totalCost: 16.00, date: "05/05/2025", time: "13:00", notes: "Venta de 20kg manzanas" },
+                            { id: 8, productId: 104, type: "compra", quantity: 30, price: 150.00, totalCost: 150.00, date: "05/04/2025", time: "14:00", notes: "Compra de 30 detergentes" }
+                        ]
+                    }
                 ]
-            },
-            {
-                id: 2,
-                name: "INVENTARIO SECUNDARIO",
-                initialAmount: 5000.00,
-                creationDate: "10/03/2025",
-                products: [
-                    { id: 201, name: "Cuaderno A4", category: "Papelería", sku: "CA401", description: "Cuaderno espiral 100 hojas", cost: 1.00, salePrice: 1.80, stock: 200, unit: "unidad", location: "Oficina", supplier: "Papeles S.A.", lastUpdated: "05/06/2025" }
-                ],
-                transactions: [
-                    { id: 10, productId: null, type: "creacion_inventario", quantity: 1, price: 5000.00, date: "10/03/2025", time: "09:00", notes: "Fondo inicial para inventario secundario", totalCost: 5000.00 },
-                    { id: 11, productId: 201, type: "compra", quantity: 200, price: 200.00, totalCost: 200.00, date: "10/03/2025", time: "10:00", notes: "Compra de 200 cuadernos" },
-                    { id: 12, productId: 201, type: "venta", quantity: 50, price: 90.00, totalCost: 50.00, date: "05/06/2025", time: "14:00", notes: "Venta de 50 cuadernos" }
-                ]
-            }
-        ]
-    };
+            };
+            saveInventrakData(); // Guarda los datos por defecto para el futuro
+        }
+    } catch (e) {
+        console.error('Error al cargar datos de localStorage. Reiniciando datos.', e);
+        inventrakData = {
+            users: [{ email: "test@inventrak.com", password: "password123", name: "Claudia" }],
+            currentUser: null,
+            budget: 50000.00,
+            losses: 0.00,
+            gains: 0.00,
+            inventories: [
+                {
+                    id: 1,
+                    name: "INVENTARIO PRINCIPAL",
+                    initialAmount: 10000.00,
+                    creationDate: "01/01/2025",
+                    products: [],
+                    transactions: []
+                }
+            ]
+        };
+        saveInventrakData(); // Guarda los datos reseteados
+    }
 
-    // Validación y saneamiento de datos cargados de localStorage
+    // Validación y saneamiento de datos cargados/inicializados
     inventrakData.inventories = inventrakData.inventories.map(inv => {
         return {
             ...inv,
@@ -98,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
             transactions: Array.isArray(inv.transactions) ? inv.transactions : []
         };
     });
-    console.log('Datos de inventrakData después del saneamiento:', inventrakData);
+    console.log('inventrakData después del saneamiento final:', inventrakData);
 
 
     let selectedInventoryId = null;
@@ -106,7 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Selectores de Elementos del DOM ---
 
-    // Elementos comunes
     const logoutButton = document.getElementById('logout-button');
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebar-overlay');
@@ -116,7 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
     const contentSections = document.querySelectorAll('.content-section');
 
-    // Elementos de la página de Login/Registro
     const loginPanel = document.getElementById('loginPanel');
     const registerPanel = document.getElementById('registerPanel');
     const loginForm = document.getElementById('loginForm');
@@ -130,7 +129,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const registerPasswordInput = document.getElementById('registerPassword');
     const confirmPasswordInput = document.getElementById('confirmPassword');
 
-    // Elementos del Dashboard
+    // LOGS DE DEPURACIÓN PARA EL LOGIN/REGISTRO
+    console.log('Elementos de Login/Registro encontrados:');
+    console.log('  loginPanel:', !!loginPanel);
+    console.log('  registerPanel:', !!registerPanel);
+    console.log('  loginForm:', !!loginForm);
+    console.log('  registerForm:', !!registerForm);
+    console.log('  showRegisterLink:', !!showRegisterLink);
+    console.log('  showLoginLink:', !!showLoginLink);
+
+
     const currentTimeSpan = document.getElementById('current-time');
     const userNameSpan = document.getElementById('user-name');
     const currentBudgetSpan = document.getElementById('current-budget');
@@ -142,16 +150,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const topUpBudgetBtn = document.getElementById('top-up-budget-btn');
     const changeBudgetBtn = document.getElementById('change-budget-btn');
 
-    // Elementos de Crear Inventario
     const createInventoryForm = document.getElementById('createInventoryForm');
     const newInventoryNameInput = document.getElementById('newInventoryName');
     const newInventoryInitialAmountInput = document.getElementById('newInventoryInitialAmount');
 
-    // Elementos de Ver Inventarios
     const inventoriesListDiv = document.getElementById('inventories-list');
     const noInventoriesMessage = document.getElementById('no-inventories-message');
 
-    // Elementos de Gestionar Inventario
     const backToInventoriesBtn = document.getElementById('backToInventoriesBtn');
     const currentInventoryNameSpan = document.getElementById('currentInventoryName');
     const managedInventoryInitialAmountSpan = document.getElementById('managedInventoryInitialAmount');
@@ -179,7 +184,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const annualBalanceSpan = document.getElementById('annualBalance');
     const recentTransactionsList = document.getElementById('recentTransactionsList');
 
-    // Elementos de Gráficos y Configuración
     const categoryDistributionChartDiv = document.getElementById('category-distribution-chart');
     const categoryDistributionLegendDiv = document.getElementById('category-distribution-legend');
     const noCategoryDataMessage = document.getElementById('no-category-data-message');
@@ -193,8 +197,13 @@ document.addEventListener('DOMContentLoaded', () => {
      * Guarda el objeto 'inventrakData' completo en localStorage.
      */
     function saveInventrakData() {
-        localStorage.setItem('inventrakData', JSON.stringify(inventrakData));
-        console.log('Datos guardados en localStorage:', inventrakData);
+        try {
+            localStorage.setItem('inventrakData', JSON.stringify(inventrakData));
+            console.log('Datos guardados en localStorage exitosamente.');
+        } catch (e) {
+            console.error('Error al guardar datos en localStorage:', e);
+            alert('Error al guardar datos en su navegador. Por favor, asegúrese de que el almacenamiento local está habilitado.');
+        }
     }
 
     /**
@@ -248,7 +257,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Sidebar cerrada (modo móvil).');
         }
 
-        // Acciones específicas al mostrar la sección de gráficos
         if (sectionId === 'settings-section') {
             renderSettingsCharts();
         }
@@ -272,7 +280,6 @@ document.addEventListener('DOMContentLoaded', () => {
             userNameSpan.textContent = currentUser ? currentUser.name : 'Usuario';
         }
         
-        // Recalcular pérdidas y ganancias GLOBALES (del mes actual)
         let totalGlobalLossesThisMonth = 0;
         let totalGlobalGainsThisMonth = 0;
         const currentMonth = new Date().getMonth();
@@ -288,22 +295,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (t.type === 'venta' || t.type === 'ajuste_positivo' || t.type === 'ajuste_presupuesto_positivo' || t.type === 'top_up_budget') {
                             totalGlobalGainsThisMonth += t.price;
                         } else if (t.type === 'compra' || t.type === 'entrada' || t.type === 'creacion_inventario' || t.type === 'ajuste_negativo' || t.type === 'eliminacion' || t.type === 'ajuste_presupuesto_negativo' || t.type === 'change_budget_negative') {
-                            totalGlobalLossesThisMonth += (t.totalCost || t.price || 0); // Usar totalCost si existe
+                            totalGlobalLossesThisMonth += (t.totalCost || t.price || 0);
                         }
                     }
                 });
             }
         });
-        // Actualizar los datos globales de pérdidas y ganancias para el dashboard
         inventrakData.losses = totalGlobalLossesThisMonth;
         inventrakData.gains = totalGlobalGainsThisMonth;
-        saveInventrakData(); // Guarda los totales actualizados
+        saveInventrakData();
 
         if (currentBudgetSpan) currentBudgetSpan.textContent = formatCurrency(inventrakData.budget);
         if (totalLossesSpan) totalLossesSpan.textContent = formatCurrency(inventrakData.losses);
         if (totalGainsSpan) totalGainsSpan.textContent = formatCurrency(inventrakData.gains);
 
-        // Generar comentarios financieros
         generateFinancialComment();
 
         renderDashboardInOutList();
@@ -317,12 +322,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!financialSummaryComment) return;
 
         const currentBudget = inventrakData.budget;
-        const totalLosses = inventrakData.losses; // Mensual
-        const totalGains = inventrakData.gains; // Mensual
+        const totalLosses = inventrakData.losses;
+        const totalGains = inventrakData.gains;
 
         let comment = "Aquí verás un resumen de tu situación financiera.";
 
-        // Comentarios sobre el presupuesto actual (saldo de efectivo)
         if (currentBudget > 100000) {
             comment = "¡Tu presupuesto está floreciendo! Un excelente trabajo manteniendo las finanzas en verde. ¡Sigue así!";
         } else if (currentBudget > 50000) {
@@ -335,7 +339,6 @@ document.addEventListener('DOMContentLoaded', () => {
             comment = "¡Atención! Tu presupuesto está en números rojos. Es crucial que revises urgentemente tus finanzas y tomes acciones para revertir la situación.";
         }
 
-        // Comentarios adicionales basados en ganancias vs. pérdidas (mensual)
         if (totalGains > totalLosses * 1.5) {
             comment += "<br>¡Felicidades! Este mes tus ganancias han superado con creces tus gastos. ¡Un rendimiento impresionante!";
         } else if (totalGains > totalLosses) {
@@ -344,9 +347,9 @@ document.addEventListener('DOMContentLoaded', () => {
             comment += "<br>Este mes tus gastos han sido significativamente más altos que tus ganancias. Es momento de identificar dónde puedes optimizar y buscar nuevas oportunidades de ingreso.";
         } else if (totalLosses > totalGains) {
             comment += "<br>Tus gastos fueron mayores que tus ganancias este mes. Es un buen momento para analizar tus movimientos y ajustar tu estrategia.";
-        } else if (totalGains === 0 && totalLosses === 0 && currentBudget === 50000) { // Estado inicial sin movimientos
+        } else if (totalGains === 0 && totalLosses === 0 && currentBudget === 50000) {
             comment += "<br>Aún no hay movimientos registrados este mes. ¡Es un buen momento para empezar a trackear tus finanzas!";
-        } else if (totalGains === 0 && totalLosses === 0) { // Si no hay movimientos pero el presupuesto cambió
+        } else if (totalGains === 0 && totalLosses === 0) {
             comment += "<br>No se han registrado movimientos de inventario este mes, pero tu presupuesto ha sido ajustado manualmente.";
         } else {
             comment += "<br>Tus ingresos y gastos de este mes están bastante equilibrados. Mantén la vigilancia para asegurar una tendencia positiva.";
@@ -407,9 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const div = document.createElement('div');
             let typeClass = 'text-gray-700';
             let sign = '';
-            let displayValue = transaction.price;
-
-            let actualValueForDisplay = transaction.price; // Valor por defecto
+            let actualValueForDisplay = transaction.price;
 
             if (transaction.type === 'venta' || transaction.type === 'ajuste_positivo' || transaction.type === 'ajuste_presupuesto_positivo' || transaction.type === 'top_up_budget') {
                 typeClass = 'text-green-500';
@@ -420,7 +421,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 sign = '-';
                 actualValueForDisplay = transaction.totalCost || transaction.price;
             }
-            displayValue = actualValueForDisplay;
 
 
             div.className = 'flex justify-between items-center bg-gray-50 p-3 rounded-lg shadow-sm';
@@ -430,7 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="text-inventrak-text-light text-sm">${transaction.date}</span>
                     <span class="text-inventrak-text-dark text-sm font-medium mt-1 sm:mt-0">${transaction.transactionDisplay}</span>
                 </div>
-                <span class="${typeClass} font-semibold text-sm sm:text-base">${sign}${formatCurrency(displayValue)}</span>
+                <span class="${typeClass} font-semibold text-sm sm:text-base">${sign}${formatCurrency(actualValueForDisplay)}</span>
             `;
             inOutList.appendChild(div);
         });
@@ -457,9 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 div.className = 'flex flex-col sm:flex-row justify-between items-start sm:items-center bg-inventrak-card-bg p-4 rounded-xl shadow-md';
                 div.dataset.inventoryId = inventory.id;
 
-                // Calcular el valor total actual del inventario (stock * costo)
                 const totalInventoryValue = inventory.products.reduce((sum, product) => sum + (product.stock * product.cost), 0);
-                // Calcular el valor de las ventas realizadas por este inventario
                 const salesValue = inventory.transactions.reduce((sum, t) => {
                     if (t.type === 'venta') return sum + t.price;
                     return sum;
@@ -488,7 +486,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 inventoriesListDiv.appendChild(div);
             });
 
-            // Añadir event listeners a los botones de gestionar, editar y eliminar inventario
             document.querySelectorAll('.manage-inventory-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -555,7 +552,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 productsListDiv.appendChild(div);
             });
 
-            // Añadir event listeners para editar, eliminar y vender productos
             document.querySelectorAll('.sell-product-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const productId = parseInt(e.currentTarget.dataset.productId);
@@ -602,10 +598,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const dateParts = t.date.split('/');
             const transactionDate = new Date(parseInt(dateParts[2]), parseInt(dateParts[1]) - 1, parseInt(dateParts[0]));
 
-            let value = t.price || 0; // Valor de la transacción
-            let costValue = t.totalCost || 0; // Costo asociado a la transacción
+            let value = t.price || 0;
+            let costValue = t.totalCost || 0;
 
-            if (t.type === 'venta' || t.type === 'ajuste_positivo') {
+            if (t.type === 'venta' || t.type === 'ajuste_positivo' || t.type === 'ajuste_presupuesto_positivo' || t.type === 'top_up_budget') {
                 if (t.date === today) dailyNet += value;
                 if (transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear) monthlyNet += value;
                 if (transactionDate.getFullYear() === currentYear) annualNet += value;
@@ -617,10 +613,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (t.date === today) dailyNet -= costValue;
                 if (transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear) monthlyNet -= costValue;
                 if (transactionDate.getFullYear() === currentYear) annualNet -= costValue;
-            } else if (t.type === 'ajuste_presupuesto_positivo') {
-                 if (t.date === today) dailyNet += value;
-                if (transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear) monthlyNet += value;
-                if (transactionDate.getFullYear() === currentYear) annualNet += value;
             } else if (t.type === 'ajuste_presupuesto_negativo') {
                  if (t.date === today) dailyNet -= value;
                 if (transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear) monthlyNet -= value;
@@ -645,7 +637,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return dateTimeB - dateTimeA;
             });
 
-            sortedTransactions.slice(0, 5).forEach(t => { // Mostrar las últimas 5 transacciones
+            sortedTransactions.slice(0, 5).forEach(t => {
                 const div = document.createElement('div');
                 let typeColor = 'text-gray-700';
                 let sign = '';
@@ -681,10 +673,31 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function renderSettingsCharts() {
         console.log('Iniciando renderSettingsCharts...');
+        // Verificar si d3 está definido antes de usarlo
+        if (typeof d3 === 'undefined') {
+            console.error('D3.js no está cargado. No se pueden renderizar los gráficos.');
+            if (categoryDistributionChartDiv) categoryDistributionChartDiv.innerHTML = '<p class="text-red-500 text-center">Error: No se pudo cargar la librería de gráficos (D3.js).</p>';
+            if (monthlyNetFlowChartDiv) monthlyNetFlowChartDiv.innerHTML = '<p class="text-red-500 text-center">Error: No se pudo cargar la librería de gráficos (D3.js).</p>';
+            return;
+        }
+
         // Limpiar los contenedores de gráficos anteriores
         if (categoryDistributionChartDiv) categoryDistributionChartDiv.innerHTML = '';
         if (categoryDistributionLegendDiv) categoryDistributionLegendDiv.innerHTML = '';
         if (monthlyNetFlowChartDiv) monthlyNetFlowChartDiv.innerHTML = '';
+
+        // Definir la escala de color D3 aquí, dentro de la función que usa D3
+        const colorScale = d3.scaleOrdinal()
+            .range([
+                inventrakColors['darkblue'],
+                inventrakColors['yellow'],
+                inventrakColors['blue'],
+                inventrakColors['green-light'],
+                inventrakColors['gray-medium'],
+                inventrakColors['positive'],
+                inventrakColors['negative'],
+                inventrakColors['text-dark']
+            ]);
 
         // Recolectar datos para el gráfico de categorías
         const allProducts = [];
@@ -696,34 +709,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const categoryData = Array.from(categoryCounts, ([category, count]) => ({ category, count }));
 
         if (categoryData.length > 0) {
-            renderCategoryDistributionChart(categoryData, 'category-distribution-chart');
-            renderCategoryDistributionLegend(categoryData, 'category-distribution-legend');
+            renderCategoryDistributionChart(categoryData, 'category-distribution-chart', colorScale);
+            renderCategoryDistributionLegend(categoryData, 'category-distribution-legend', colorScale);
             if (noCategoryDataMessage) noCategoryDataMessage.classList.add('hidden');
         } else {
             if (noCategoryDataMessage) noCategoryDataMessage.classList.remove('hidden');
         }
 
         // Recolectar datos para el gráfico de flujo neto mensual
-        const monthlyFlows = new Map(); // Key: YYYY-MM, Value: net flow
+        const monthlyFlows = new Map();
 
         inventrakData.inventories.forEach(inv => {
             inv.transactions.forEach(t => {
-                const dateParts = t.date.split('/'); // DD/MM/YYYY
-                const yearMonth = `${dateParts[2]}-${dateParts[1]}`; // YYYY-MM
+                const dateParts = t.date.split('/');
+                const yearMonth = `${dateParts[2]}-${dateParts[1]}`;
 
                 let valueChange = 0;
-                // Considerar el impacto en el flujo de efectivo global para los gráficos
-                if (t.type === 'venta' || t.type === 'ajuste_positivo' || t.type === 'ajuste_presupuesto_positivo' || t.type === 'top_up_budget') {
+                if (t.type === 'venta' || t.type === 'ajuste_positivo' || t.type === 'ajuste_presupuesto_positive' || t.type === 'top_up_budget') {
                     valueChange = t.price;
                 } else if (t.type === 'compra' || t.type === 'entrada' || t.type === 'creacion_inventario' || t.type === 'ajuste_negativo' || t.type === 'eliminacion' || t.type === 'ajuste_presupuesto_negativo' || t.type === 'change_budget_negative') {
-                    valueChange = -(t.totalCost || t.price); // Negativo para gastos/pérdidas
+                    valueChange = -(t.totalCost || t.price);
                 }
                 
                 monthlyFlows.set(yearMonth, (monthlyFlows.get(yearMonth) || 0) + valueChange);
             });
         });
 
-        // Convertir el Map a un array de objetos y ordenar por fecha
         const monthlyFlowData = Array.from(monthlyFlows, ([month, netFlow]) => ({ month, netFlow }))
                                     .sort((a, b) => a.month.localeCompare(b.month));
 
@@ -741,19 +752,20 @@ document.addEventListener('DOMContentLoaded', () => {
      * Renderiza un gráfico circular (pie chart) de distribución por categorías de productos.
      * @param {Array} data - Array de objetos { category: string, count: number }.
      * @param {string} containerId - ID del elemento HTML donde se renderizará el gráfico.
+     * @param {d3.ScaleOrdinal} colorScale - La escala de color de D3.
      */
-    function renderCategoryDistributionChart(data, containerId) {
+    function renderCategoryDistributionChart(data, containerId, colorScale) {
         if (!data || data.length === 0) {
             console.log("No hay datos para renderizar el gráfico de distribución de categorías.");
             return;
         }
 
         const container = d3.select(`#${containerId}`);
-        const width = Math.min(container.node().getBoundingClientRect().width, 300); // Adaptable al ancho del contenedor
-        const height = width; // Hacerlo cuadrado
+        const width = Math.min(container.node().getBoundingClientRect().width, 300);
+        const height = width;
         const radius = Math.min(width, height) / 2;
 
-        container.html(''); // Limpiar cualquier SVG anterior
+        container.html('');
 
         const svg = container.append("svg")
             .attr("width", width)
@@ -767,7 +779,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const arc = d3.arc()
             .innerRadius(0)
-            .outerRadius(radius * 0.8); // Ajustar el radio exterior para que los arcos sean visibles
+            .outerRadius(radius * 0.8);
 
         const outerArc = d3.arc()
             .innerRadius(radius * 0.9)
@@ -782,10 +794,9 @@ document.addEventListener('DOMContentLoaded', () => {
         arcs.append("path")
             .attr("d", arc)
             .attr("fill", d => colorScale(d.data.category))
-            .attr("stroke", inventrakColors['card-bg']) // Borde blanco para los segmentos
+            .attr("stroke", inventrakColors['card-bg'])
             .style("stroke-width", "2px");
 
-        // Añadir etiquetas de texto
         arcs.append("text")
             .attr("transform", d => `translate(${outerArc.centroid(d)})`)
             .attr("dy", "0.35em")
@@ -799,15 +810,16 @@ document.addEventListener('DOMContentLoaded', () => {
      * Renderiza la leyenda para el gráfico circular de distribución de categorías.
      * @param {Array} data - Array de objetos { category: string, count: number }.
      * @param {string} containerId - ID del elemento HTML donde se renderizará la leyenda.
+     * @param {d3.ScaleOrdinal} colorScale - La escala de color de D3.
      */
-    function renderCategoryDistributionLegend(data, containerId) {
+    function renderCategoryDistributionLegend(data, containerId, colorScale) {
         if (!data || data.length === 0) {
             d3.select(`#${containerId}`).html('');
             return;
         }
 
         const legendContainer = d3.select(`#${containerId}`);
-        legendContainer.html(''); // Limpiar cualquier leyenda anterior
+        legendContainer.html('');
 
         const legendItems = legendContainer.selectAll("div")
             .data(data)
@@ -837,16 +849,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const container = d3.select(`#${containerId}`);
         const parentWidth = container.node().getBoundingClientRect().width;
-        const margin = { top: 20, right: 30, bottom: 60, left: 70 }; // Aumentar margen inferior para etiquetas de eje X
+        const margin = { top: 20, right: 30, bottom: 60, left: 70 };
 
-        // Ajustar el ancho del gráfico para acomodar más barras si hay muchos meses
-        const barWidth = 40; // Ancho de cada barra
+        const barWidth = 40;
         const paddingBetweenBars = 10;
         const calculatedWidth = (data.length * (barWidth + paddingBetweenBars)) + margin.left + margin.right;
-        const width = Math.max(parentWidth, calculatedWidth); // Asegura que el gráfico no sea demasiado pequeño
+        const width = Math.max(parentWidth, calculatedWidth);
         const height = 300 - margin.top - margin.bottom;
 
-        container.html(''); // Limpiar cualquier SVG anterior
+        container.html('');
 
         const svg = container.append("svg")
             .attr("width", width + margin.left + margin.right)
@@ -854,34 +865,29 @@ document.addEventListener('DOMContentLoaded', () => {
             .append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
 
-        // Escala X para los meses
         const x = d3.scaleBand()
             .domain(data.map(d => d.month))
             .range([0, width])
             .padding(0.2);
 
-        // Escala Y para el flujo neto (centrada en 0)
         const y = d3.scaleLinear()
             .domain([d3.min(data, d => Math.min(0, d.netFlow)), d3.max(data, d => Math.max(0, d.netFlow))])
             .nice()
             .range([height, 0]);
 
-        // Eje X
         svg.append("g")
-            .attr("transform", `translate(0,${y(0)})`) // Mover el eje X a la posición Y=0
+            .attr("transform", `translate(0,${y(0)})`)
             .call(d3.axisBottom(x))
             .selectAll("text")
-                .attr("transform", "rotate(-45)") // Rotar etiquetas para evitar superposición
+                .attr("transform", "rotate(-45)")
                 .style("text-anchor", "end")
-                .attr("fill", inventrakColors['text-dark']); // Color de las etiquetas
+                .attr("fill", inventrakColors['text-dark']);
 
-        // Eje Y
         svg.append("g")
-            .call(d3.axisLeft(y).tickFormat(d => formatCurrency(d))) // Formatear ticks como moneda
+            .call(d3.axisLeft(y).tickFormat(d => formatCurrency(d)))
             .selectAll("text")
-            .attr("fill", inventrakColors['text-dark']); // Color de las etiquetas
+            .attr("fill", inventrakColors['text-dark']);
 
-        // Etiquetas de los ejes
         svg.append("text")
             .attr("transform", `translate(${width / 2}, ${height + margin.bottom - 10})`)
             .style("text-anchor", "middle")
@@ -897,19 +903,18 @@ document.addEventListener('DOMContentLoaded', () => {
             .attr("fill", inventrakColors['text-dark'])
             .text("Flujo Neto");
 
-        // Barras
         svg.selectAll(".bar")
             .data(data)
             .enter().append("rect")
             .attr("class", "bar")
             .attr("x", d => x(d.month))
-            .attr("y", d => y(Math.max(0, d.netFlow))) // Ajuste para barras positivas y negativas
+            .attr("y", d => y(Math.max(0, d.netFlow)))
             .attr("width", x.bandwidth())
-            .attr("height", d => Math.abs(y(d.netFlow) - y(0))) // Altura basada en la distancia a Y=0
-            .attr("fill", d => d.netFlow >= 0 ? inventrakColors['positive'] : inventrakColors['negative']) // Colores condicionales
-            .on("mouseover", function(event, d) { // Tooltip al pasar el ratón
+            .attr("height", d => Math.abs(y(d.netFlow) - y(0)))
+            .attr("fill", d => d.netFlow >= 0 ? inventrakColors['positive'] : inventrakColors['negative'])
+            .on("mouseover", function(event, d) {
                 d3.select(this)
-                    .attr("fill", d => d.netFlow >= 0 ? d3.rgb(inventrakColors['positive']).darker(0.5) : d3.rgb(inventrakColors['negative']).darker(0.5)); // Oscurecer al pasar el ratón
+                    .attr("fill", d => d.netFlow >= 0 ? d3.rgb(inventrakColors['positive']).darker(0.5) : d3.rgb(inventrakColors['negative']).darker(0.5));
                 
                 const tooltip = container.append("div")
                     .attr("class", "tooltip absolute bg-white p-2 rounded-lg shadow-md text-sm text-inventrak-text-dark border border-gray-300 pointer-events-none")
@@ -917,7 +922,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     .style("top", `${event.pageY - 20}px`)
                     .html(`<strong>${d.month}</strong><br>Neto: ${formatCurrency(d.netFlow)}`);
             })
-            .on("mouseout", function() { // Quitar tooltip al salir el ratón
+            .on("mouseout", function() {
                 d3.select(this)
                     .attr("fill", d => d.netFlow >= 0 ? inventrakColors['positive'] : inventrakColors['negative']);
                 container.select(".tooltip").remove();
@@ -1117,15 +1122,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         inventrakData.budget += amount;
 
-        // Añadir una transacción global para este movimiento de presupuesto
-        // (Aunque no esté en un inventario específico, se registra para el historial general)
-        inventrakData.inventories[0].transactions.push({ // Asumiendo que el primer inventario puede ser un "general log"
+        // Asegúrate de que el primer inventario exista para añadir la transacción
+        if (inventrakData.inventories.length === 0) {
+            inventrakData.inventories.push({
+                id: Date.now(),
+                name: "GENERAL LOG",
+                initialAmount: 0,
+                creationDate: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                products: [],
+                transactions: []
+            });
+            saveInventrakData();
+        }
+
+        inventrakData.inventories[0].transactions.push({
             id: Date.now(),
             productId: null,
             type: "top_up_budget",
             quantity: 1,
             price: amount,
-            totalCost: 0, // No hay costo asociado, es una inyección de capital
+            totalCost: 0,
             date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
             time: `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`,
             notes: `Recarga manual de presupuesto global`
@@ -1156,9 +1172,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let transactionType;
         if (difference > 0) {
-            transactionType = "change_budget_positive"; // Nuevo tipo: aumento manual
+            transactionType = "change_budget_positive";
         } else if (difference < 0) {
-            transactionType = "change_budget_negative"; // Nuevo tipo: disminución manual
+            transactionType = "change_budget_negative";
         } else {
             alert('El presupuesto no ha cambiado.');
             return;
@@ -1166,14 +1182,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         inventrakData.budget = newBudget;
 
-        // Registrar una transacción global para este cambio
-        inventrakData.inventories[0].transactions.push({ // Asumiendo que el primer inventario puede ser un "general log"
+        // Asegúrate de que el primer inventario exista para añadir la transacción
+        if (inventrakData.inventories.length === 0) {
+            inventrakData.inventories.push({
+                id: Date.now(),
+                name: "GENERAL LOG",
+                initialAmount: 0,
+                creationDate: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                products: [],
+                transactions: []
+            });
+            saveInventrakData();
+        }
+
+        inventrakData.inventories[0].transactions.push({
             id: Date.now(),
             productId: null,
             type: transactionType,
             quantity: 1,
             price: Math.abs(difference),
-            totalCost: (difference < 0) ? Math.abs(difference) : 0, // Si es negativo, el costo es la diferencia absoluta
+            totalCost: (difference < 0) ? Math.abs(difference) : 0,
             date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
             time: `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`,
             notes: `Cambio manual de presupuesto global a ${formatCurrency(newBudget)}`
@@ -1248,7 +1276,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const amountDifference = newAmount - oldInitialAmount;
             const transactionType = amountDifference > 0 ? "ajuste_presupuesto_positivo" : "ajuste_presupuesto_negativo";
             
-            inventrakData.budget += amountDifference; // Ajusta el presupuesto global
+            inventrakData.budget += amountDifference;
 
             inventory.transactions.push({
                 id: Date.now(),
@@ -1342,13 +1370,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const oldStock = oldProduct.stock;
                 const stockDifference = productStock - oldStock;
                 
-                // Si el stock actual es mayor que el stock anterior, es una "compra" o "entrada"
                 if (stockDifference > 0) {
                     const transactionCost = stockDifference * productCost;
                     currentInventory.transactions.push({
                         id: Date.now(),
                         productId: editingProductId,
-                        type: "compra", // O "entrada"
+                        type: "compra",
                         quantity: stockDifference,
                         price: transactionCost,
                         totalCost: transactionCost,
@@ -1356,14 +1383,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         time: formattedTime,
                         notes: `Reabastecimiento de ${stockDifference} unidades de ${productName}`
                     });
-                    inventrakData.budget -= transactionCost; // Afecta el presupuesto global
+                    inventrakData.budget -= transactionCost;
                 } else if (stockDifference < 0) {
-                    // Si el stock actual es menor que el stock anterior, es un "ajuste_negativo" o "pérdida"
                     const transactionCost = Math.abs(stockDifference) * productCost;
                     currentInventory.transactions.push({
                         id: Date.now(),
                         productId: editingProductId,
-                        type: "ajuste_negativo", // O "eliminacion"
+                        type: "ajuste_negativo",
                         quantity: Math.abs(stockDifference),
                         price: transactionCost,
                         totalCost: transactionCost,
@@ -1371,8 +1397,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         time: formattedTime,
                         notes: `Ajuste negativo de ${Math.abs(stockDifference)} unidades de ${productName}`
                     });
-                    // NOTA: Los ajustes negativos/eliminaciones de stock no impactan directamente el budget global aquí,
-                    // ya que el dinero se gastó al comprarlo. Esto es una pérdida de valor de activo.
                 }
 
                 currentInventory.products[productIndex] = {
@@ -1569,7 +1593,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderProductList(currentInventory);
         renderInventoryBalances(currentInventory);
         renderDashboard();
-        console.log(`Venta de ${quantityToYell} unidades de producto ID: ${productId} en inventario ID: ${selectedInventoryId}. Presupuesto global actualizado.`);
+        console.log(`Venta de ${quantityToSell} unidades de producto ID: ${productId} en inventario ID: ${selectedInventoryId}. Presupuesto global actualizado.`);
     }
 
     /**
@@ -1585,19 +1609,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Inicialización y Event Listeners Globales ---
 
-    if (loginForm && registerForm) {
-        console.log('Lógica de login.html iniciada. Asignando event listeners de formularios.');
-        loginForm.addEventListener('submit', handleLogin);
-        registerForm.addEventListener('submit', handleRegister);
-        if (showRegisterLink) showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); toggleForm(false); });
-        if (showLoginLink) showLoginLink.addEventListener('click', (e) => { e.preventDefault(); toggleForm(true); });
+    // Comprueba si estamos en login.html
+    if (loginForm || registerForm) {
+        console.log('Detectada página de login/registro. Asignando event listeners de formularios.');
+        if (loginForm) {
+            loginForm.addEventListener('submit', handleLogin);
+            console.log('Listener de submit para loginForm asignado.');
+        }
+        if (registerForm) {
+            registerForm.addEventListener('submit', handleRegister);
+            console.log('Listener de submit para registerForm asignado.');
+        }
+        if (showRegisterLink) {
+            showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); toggleForm(false); });
+            console.log('Listener de click para showRegisterLink asignado.');
+        }
+        if (showLoginLink) {
+            showLoginLink.addEventListener('click', (e) => { e.preventDefault(); toggleForm(true); });
+            console.log('Listener de click para showLoginLink asignado.');
+        }
     }
 
-    if (document.body.classList.contains('flex-col')) {
-        console.log('Lógica de index.html iniciada.');
+    // Comprueba si estamos en index.html
+    if (document.body.classList.contains('flex-col')) { // Asumiendo que index.html tiene esta clase en el body
+        console.log('Detectada página principal (index.html). Iniciando lógica del dashboard.');
 
         if (!inventrakData.currentUser) {
-            console.log('No hay usuario logueado. Redirigiendo a login.html.');
+            console.log('No hay usuario logueado en index.html. Redirigiendo a login.html.');
             window.location.href = 'login.html';
             return;
         } else {
@@ -1621,7 +1659,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (sectionId === 'dashboard-section') {
                     renderDashboard();
                 }
-                // renderSettingsCharts se llama dentro de showSection
             });
         });
 
@@ -1712,6 +1749,13 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('WARN: logoutButton no encontrado.');
         }
 
-        showSection('dashboard-section'); // Muestra el dashboard por defecto
+        // Mostrar el dashboard si estamos en index.html y no hay una sección específica a mostrar
+        // Esto previene un problema si la página se carga directamente sin un hash en la URL
+        const currentSection = document.querySelector('.content-section.active');
+        if (!currentSection || currentSection.id === 'settings-section' && !inventrakData.currentUser) {
+            // Si la sección de configuración está activa pero no hay usuario (caso de recarga forzada),
+            // o si ninguna sección está activa, volvemos al dashboard.
+            showSection('dashboard-section');
+        }
     }
 });
