@@ -1,11 +1,13 @@
 // js/script.js
 // Archivo JavaScript principal para las funcionalidades de Login, Dashboard,
-// Crear Inventario, Ver Inventarios, Gestión CRUD de Inventarios y Productos, y Gráficos.
+// Crear Inventario, Ver Inventarios, Gestión CRUD de Inventarios y Productos,
+// Gráficos, Vencimientos y Generación de PDF.
 
 // Espera a que todo el contenido del DOM esté cargado antes de ejecutar el script
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM completamente cargado. Iniciando script.js');
     console.log('Tipo de d3 al inicio del script (en DOMContentLoaded):', typeof d3);
+    console.log('Tipo de jspdf al inicio del script (en DOMContentLoaded):', typeof jspdf);
 
     // --- Paleta de Colores de Inventrak para D3.js ---
     const inventrakColors = {
@@ -20,11 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
         'gain': '#E0FF7F',
         'primary-accent': '#4A90E2',
         'secondary-accent': '#ADD8E6',
-        'positive': '#22C55E',
-        'negative': '#EF4444',
+        'positive': '#22C55E', // un verde más fuerte para barras positivas
+        'negative': '#EF4444', // un rojo más fuerte para barras negativas
         'gray-light': '#F3F4F6',
         'gray-medium': '#9CA3AF',
-        'gray-dark': '#4B5563'
+        'gray-dark': '#4B5563',
+        'red-expired': '#EF4444' // Rojo específico para vencimientos
     };
 
     // --- Estado de la Aplicación (Datos almacenados en localStorage) ---
@@ -51,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         products: [
                             { id: 101, name: "Leche Entera", category: "Lácteos", sku: "LE001", description: "Leche de vaca semidesnatada", cost: 2.00, salePrice: 2.50, stock: 50, unit: "litro", location: "Pasillo 1", supplier: "Proveedor Lácteo A", expiryDate: "2025-12-31", lastUpdated: "05/06/2025" },
                             { id: 102, name: "Pan Integral", category: "Panadería", sku: "PI002", description: "Pan de molde 500g", cost: 1.50, salePrice: 2.00, stock: 100, unit: "unidad", location: "Panadería", supplier: "Panificadora B", expiryDate: "2025-06-15", lastUpdated: "05/06/2025" },
-                            { id: 103, name: "Manzanas Rojas", category: "Frutas", sku: "MR003", description: "Manzanas frescas por kilo", cost: 0.80, salePrice: 1.20, stock: 80, unit: "kg", location: "Verduras", supplier: "Frutas del Campo", expiryDate: "2025-06-20", lastUpdated: "05/06/2025" },
+                            { id: 103, name: "Manzanas Rojas", category: "Frutas", sku: "MR003", description: "Manzanas frescas por kilo", cost: 0.80, salePrice: 1.20, stock: 80, unit: "kg", location: "Verduras", supplier: "Frutas del Campo", expiryDate: "2025-06-01", lastUpdated: "05/06/2025" }, // Expired
                             { id: 104, name: "Detergente Líquido", category: "Limpieza", sku: "DL004", description: "Detergente para ropa 3L", cost: 5.00, salePrice: 7.50, stock: 30, unit: "botella", location: "Pasillo 5", supplier: "Químicos ABC", expiryDate: "2026-01-31", lastUpdated: "05/06/2025" }
                         ],
                         transactions: [
@@ -65,7 +68,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             { id: 8, productId: 104, type: "compra", quantity: 30, price: 150.00, totalCost: 150.00, date: "05/04/2025", time: "14:00", notes: "Compra de 30 detergentes" }
                         ]
                     }
-                ]
+                ],
+                // Nueva propiedad para almacenar notificaciones de vencimientos
+                // Esto permite descartar notificaciones sin eliminar el producto
+                expiredNotifications: [] // Array de { productId, inventoryId, dismissed: boolean }
             };
             saveInventrakData(); // Guarda los datos por defecto para el futuro
         }
@@ -86,7 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     products: [],
                     transactions: []
                 }
-            ]
+            ],
+            expiredNotifications: []
         };
         saveInventrakData(); // Guarda los datos reseteados
     }
@@ -99,6 +106,11 @@ document.addEventListener('DOMContentLoaded', () => {
             transactions: Array.isArray(inv.transactions) ? inv.transactions : []
         };
     });
+    // Asegurarse de que expiredNotifications existe
+    if (!inventrakData.expiredNotifications) {
+        inventrakData.expiredNotifications = [];
+        saveInventrakData();
+    }
     console.log('inventrakData después del saneamiento final:', inventrakData);
 
 
@@ -129,7 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const registerPasswordInput = document.getElementById('registerPassword');
     const confirmPasswordInput = document.getElementById('confirmPassword');
 
-    // LOGS DE DEPURACIÓN PARA EL LOGIN/REGISTRO
     console.log('Elementos de Login/Registro encontrados:');
     console.log('  loginPanel:', !!loginPanel);
     console.log('  registerPanel:', !!registerPanel);
@@ -163,6 +174,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const managedInventoryCreationDateSpan = document.getElementById('managedInventoryCreationDate');
     const editInventoryDetailsBtn = document.getElementById('editInventoryDetailsBtn');
     const deleteCurrentInventoryBtn = document.getElementById('deleteCurrentInventoryBtn');
+    const generatePdfBtn = document.getElementById('generatePdfBtn'); // Nuevo botón para PDF
+
     const productForm = document.getElementById('productForm');
     const productFormTitle = document.getElementById('productFormTitle');
     const productNameInput = document.getElementById('productName');
@@ -189,6 +202,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const noCategoryDataMessage = document.getElementById('no-category-data-message');
     const monthlyNetFlowChartDiv = document.getElementById('monthly-net-flow-chart');
     const noMonthlyDataMessage = document.getElementById('no-monthly-data-message');
+
+    // Nuevos elementos para Vencimientos
+    const expiredProductsListDiv = document.getElementById('expired-products-list');
+    const noExpiredProductsMessage = document.getElementById('no-expired-products-message');
 
 
     // --- Funciones de Utilidad ---
@@ -257,8 +274,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Sidebar cerrada (modo móvil).');
         }
 
+        // Acciones específicas al mostrar secciones
         if (sectionId === 'settings-section') {
             renderSettingsCharts();
+        } else if (sectionId === 'expirations-section') {
+            renderExpiredNotifications();
         }
     }
 
@@ -310,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (totalGainsSpan) totalGainsSpan.textContent = formatCurrency(inventrakData.gains);
 
         generateFinancialComment();
-
+        checkForExpiredProducts(); // Revisa vencimientos cada vez que se actualiza el dashboard
         renderDashboardInOutList();
         console.log('renderDashboard finalizado.');
     }
@@ -530,12 +550,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (noProductsMessage) noProductsMessage.classList.add('hidden');
             inventory.products.forEach(product => {
                 const div = document.createElement('div');
-                div.className = 'flex flex-col sm:flex-row justify-between items-start sm:items-center bg-inventrak-blue bg-opacity-20 p-4 rounded-xl shadow-sm border border-inventrak-blue';
+                // Resaltar productos vencidos en la lista de productos
+                const isExpired = product.expiryDate && new Date(product.expiryDate) < new Date();
+                div.className = `flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-xl shadow-sm border ${isExpired ? 'bg-red-100 border-red-400' : 'bg-inventrak-blue bg-opacity-20 border-inventrak-blue'}`;
+                
                 div.innerHTML = `
                     <div class="flex flex-col flex-grow mb-2 sm:mb-0 sm:mr-4">
                         <span class="text-inventrak-text-dark font-bold text-base sm:text-lg">${product.name} <span class="text-inventrak-text-light text-xs sm:text-sm">(${product.sku || 'N/A'})</span></span>
                         <span class="text-inventrak-text-dark text-sm mt-1">Stock: ${product.stock} ${product.unit || ''} | Costo: ${formatCurrency(product.cost)} | Venta: ${formatCurrency(product.salePrice)}</span>
                         <span class="text-inventrak-text-light text-xs mt-1">Cat: ${product.category || 'N/A'} | Ubicación: ${product.location || 'N/A'} | Prov: ${product.supplier || 'N/A'} ${product.expiryDate ? `| Vence: ${product.expiryDate}` : ''}</span>
+                        ${isExpired ? `<span class="text-red-600 text-xs mt-1 font-semibold"><i class="fas fa-exclamation-triangle mr-1"></i> ¡Producto Vencido!</span>` : ''}
                     </div>
                     <div class="flex space-x-2 w-full sm:w-auto justify-end sm:justify-start">
                         <button class="sell-product-btn bg-green-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-600 transition duration-200" data-product-id="${product.id}">
@@ -673,7 +697,6 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function renderSettingsCharts() {
         console.log('Iniciando renderSettingsCharts...');
-        // Verificar si d3 está definido antes de usarlo
         if (typeof d3 === 'undefined') {
             console.error('D3.js no está cargado. No se pueden renderizar los gráficos.');
             if (categoryDistributionChartDiv) categoryDistributionChartDiv.innerHTML = '<p class="text-red-500 text-center">Error: No se pudo cargar la librería de gráficos (D3.js).</p>';
@@ -681,12 +704,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Limpiar los contenedores de gráficos anteriores
         if (categoryDistributionChartDiv) categoryDistributionChartDiv.innerHTML = '';
         if (categoryDistributionLegendDiv) categoryDistributionLegendDiv.innerHTML = '';
         if (monthlyNetFlowChartDiv) monthlyNetFlowChartDiv.innerHTML = '';
 
-        // Definir la escala de color D3 aquí, dentro de la función que usa D3
         const colorScale = d3.scaleOrdinal()
             .range([
                 inventrakColors['darkblue'],
@@ -699,7 +720,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 inventrakColors['text-dark']
             ]);
 
-        // Recolectar datos para el gráfico de categorías
         const allProducts = [];
         inventrakData.inventories.forEach(inv => {
             allProducts.push(...inv.products);
@@ -716,7 +736,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (noCategoryDataMessage) noCategoryDataMessage.classList.remove('hidden');
         }
 
-        // Recolectar datos para el gráfico de flujo neto mensual
         const monthlyFlows = new Map();
 
         inventrakData.inventories.forEach(inv => {
@@ -755,11 +774,6 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {d3.ScaleOrdinal} colorScale - La escala de color de D3.
      */
     function renderCategoryDistributionChart(data, containerId, colorScale) {
-        if (!data || data.length === 0) {
-            console.log("No hay datos para renderizar el gráfico de distribución de categorías.");
-            return;
-        }
-
         const container = d3.select(`#${containerId}`);
         const width = Math.min(container.node().getBoundingClientRect().width, 300);
         const height = width;
@@ -842,11 +856,6 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {string} containerId - ID del elemento HTML donde se renderizará el gráfico.
      */
     function renderMonthlyNetFlowChart(data, containerId) {
-        if (!data || data.length === 0) {
-            console.log("No hay datos para renderizar el gráfico de flujo neto mensual.");
-            return;
-        }
-
         const container = d3.select(`#${containerId}`);
         const parentWidth = container.node().getBoundingClientRect().width;
         const margin = { top: 20, right: 30, bottom: 60, left: 70 };
@@ -928,6 +937,285 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.select(".tooltip").remove();
             });
     }
+
+    /**
+     * Revisa todos los productos en todos los inventarios y añade notificaciones para los que han expirado.
+     * Los productos ya descartados no se vuelven a añadir.
+     */
+    function checkForExpiredProducts() {
+        console.log('Iniciando checkForExpiredProducts...');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Normalizar a inicio del día
+
+        inventrakData.inventories.forEach(inventory => {
+            inventory.products.forEach(product => {
+                if (product.expiryDate) {
+                    const expiryDate = new Date(product.expiryDate);
+                    expiryDate.setHours(0, 0, 0, 0); // Normalizar a inicio del día
+
+                    const isExpired = expiryDate < today;
+                    const isNotified = inventrakData.expiredNotifications.some(
+                        n => n.productId === product.id && n.inventoryId === inventory.id
+                    );
+
+                    if (isExpired && !isNotified) {
+                        inventrakData.expiredNotifications.push({
+                            productId: product.id,
+                            inventoryId: inventory.id,
+                            dismissed: false
+                        });
+                        console.log(`Producto expirado añadido a notificaciones: ${product.name} en ${inventory.name}`);
+                    }
+                }
+            });
+        });
+        saveInventrakData();
+        console.log('Finalizado checkForExpiredProducts. Notificaciones actuales:', inventrakData.expiredNotifications);
+    }
+
+    /**
+     * Renderiza las notificaciones de productos vencidos en la sección de Vencimientos.
+     */
+    function renderExpiredNotifications() {
+        console.log('Iniciando renderExpiredNotifications...');
+        if (!expiredProductsListDiv) {
+            console.error('ERROR: Elemento expired-products-list no encontrado.');
+            return;
+        }
+        expiredProductsListDiv.innerHTML = ''; // Limpiar lista existente
+
+        const activeNotifications = inventrakData.expiredNotifications.filter(n => !n.dismissed);
+
+        if (activeNotifications.length === 0) {
+            if (noExpiredProductsMessage) noExpiredProductsMessage.classList.remove('hidden');
+            console.log('No hay notificaciones de productos vencidos activas.');
+        } else {
+            if (noExpiredProductsMessage) noExpiredProductsMessage.classList.add('hidden');
+            activeNotifications.forEach(notification => {
+                const inventory = inventrakData.inventories.find(inv => inv.id === notification.inventoryId);
+                const product = inventory?.products.find(p => p.id === notification.productId);
+
+                if (inventory && product) {
+                    const div = document.createElement('div');
+                    div.className = 'flex flex-col sm:flex-row justify-between items-start sm:items-center bg-red-100 p-4 rounded-xl shadow-md border border-red-400';
+                    div.innerHTML = `
+                        <div class="flex flex-col mb-2 sm:mb-0 flex-grow">
+                            <span class="text-inventrak-text-dark font-semibold text-lg">¡Producto Vencido!</span>
+                            <span class="text-inventrak-text-dark text-base">${product.name} en ${inventory.name}</span>
+                            <span class="text-red-600 text-sm">Fecha de Caducidad: ${product.expiryDate}</span>
+                            <span class="text-inventrak-text-light text-xs">Stock: ${product.stock} ${product.unit || ''}</span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto mt-2 sm:mt-0">
+                            <button class="dismiss-notification-btn bg-gray-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-gray-600 transition duration-200"
+                                data-inventory-id="${notification.inventoryId}" data-product-id="${notification.productId}">
+                                <i class="fas fa-times-circle mr-1"></i> Descartar Notificación
+                            </button>
+                            <button class="delete-product-from-expiration-btn bg-red-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-700 transition duration-200"
+                                data-inventory-id="${notification.inventoryId}" data-product-id="${notification.productId}">
+                                <i class="fas fa-trash-alt mr-1"></i> Eliminar Producto
+                            </button>
+                        </div>
+                    `;
+                    expiredProductsListDiv.appendChild(div);
+                }
+            });
+
+            // Añadir event listeners para los botones de las notificaciones
+            document.querySelectorAll('.dismiss-notification-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const invId = parseInt(e.currentTarget.dataset.inventoryId);
+                    const prodId = parseInt(e.currentTarget.dataset.productId);
+                    dismissExpirationNotification(prodId, invId);
+                });
+            });
+            document.querySelectorAll('.delete-product-from-expiration-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const invId = parseInt(e.currentTarget.dataset.inventoryId);
+                    const prodId = parseInt(e.currentTarget.dataset.productId);
+                    deleteProductFromExpiration(prodId, invId);
+                });
+            });
+        }
+        console.log('renderExpiredNotifications finalizado.');
+    }
+
+    /**
+     * Marca una notificación de producto vencido como descartada.
+     * @param {number} productId - El ID del producto.
+     * @param {number} inventoryId - El ID del inventario al que pertenece el producto.
+     */
+    function dismissExpirationNotification(productId, inventoryId) {
+        const notificationIndex = inventrakData.expiredNotifications.findIndex(
+            n => n.productId === productId && n.inventoryId === inventoryId
+        );
+
+        if (notificationIndex !== -1) {
+            inventrakData.expiredNotifications[notificationIndex].dismissed = true;
+            saveInventrakData();
+            renderExpiredNotifications(); // Volver a renderizar para ocultarla
+            alert('Notificación descartada.');
+            console.log(`Notificación de producto ID ${productId} en inventario ID ${inventoryId} descartada.`);
+        }
+    }
+
+    /**
+     * Elimina un producto específico del inventario a través de la notificación de vencimiento.
+     * Luego descarta la notificación.
+     * @param {number} productId - El ID del producto a eliminar.
+     * @param {number} inventoryId - El ID del inventario al que pertenece el producto.
+     */
+    function deleteProductFromExpiration(productId, inventoryId) {
+        const inventory = inventrakData.inventories.find(inv => inv.id === inventoryId);
+        if (inventory) {
+            const productToDelete = inventory.products.find(p => p.id === productId);
+            if (productToDelete) {
+                if (confirm(`¿Estás seguro de que quieres eliminar el producto vencido "${productToDelete.name}" de "${inventory.name}"? Esta acción es irreversible.`)) {
+                    // Primero, elimina el producto
+                    inventory.products = inventory.products.filter(p => p.id !== productId);
+
+                    // Registra la transacción de eliminación por vencimiento
+                    const transactionCost = productToDelete.stock * productToDelete.cost;
+                    inventory.transactions.push({
+                        id: Date.now(),
+                        productId: productId,
+                        type: "eliminacion_por_vencimiento",
+                        quantity: productToDelete.stock,
+                        price: 0, // No hay ingreso por la eliminación por vencimiento
+                        totalCost: transactionCost, // El costo que se perdió
+                        date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+                        time: `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`,
+                        notes: `Producto vencido eliminado: ${productToDelete.name}`
+                    });
+                    
+                    // Luego, descarta la notificación
+                    const notificationIndex = inventrakData.expiredNotifications.findIndex(
+                        n => n.productId === productId && n.inventoryId === inventoryId
+                    );
+                    if (notificationIndex !== -1) {
+                        inventrakData.expiredNotifications[notificationIndex].dismissed = true;
+                    }
+
+                    saveInventrakData();
+                    alert('Producto eliminado y notificación descartada.');
+                    renderExpiredNotifications(); // Re-renderiza las notificaciones
+                    // Si el usuario estaba en la sección de gestión de ese inventario, actualízala
+                    if (selectedInventoryId === inventoryId) {
+                        renderProductList(inventory);
+                        renderInventoryBalances(inventory);
+                    }
+                    renderDashboard(); // Actualiza el dashboard por posibles pérdidas
+                    console.log(`Producto ID ${productId} eliminado por vencimiento de inventario ID ${inventoryId}.`);
+                }
+            } else {
+                alert('Producto no encontrado en el inventario.');
+            }
+        } else {
+            alert('Inventario no encontrado.');
+        }
+    }
+
+
+    /**
+     * Genera un informe PDF para el inventario actualmente seleccionado.
+     */
+    function generateInventoryPdf() {
+        console.log('Iniciando generateInventoryPdf...');
+        if (typeof window.jspdf === 'undefined') {
+            alert('La librería jsPDF no está cargada. Por favor, recarga la página e inténtalo de nuevo.');
+            console.error('ERROR: jsPDF no está definido.');
+            return;
+        }
+
+        const currentInventory = inventrakData.inventories.find(inv => inv.id === selectedInventoryId);
+        if (!currentInventory) {
+            alert('No hay un inventario seleccionado para generar el PDF.');
+            console.error('ERROR: No selectedInventoryId para generar PDF.');
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Título del documento
+        doc.setFontSize(22);
+        doc.text(`INFORME DE INVENTARIO - ${currentInventory.name.toUpperCase()}`, 105, 20, null, null, "center");
+
+        // Información general del inventario
+        doc.setFontSize(12);
+        doc.setTextColor(inventrakColors['text-dark']);
+        doc.text(`Fecha de Creación: ${currentInventory.creationDate}`, 20, 40);
+        doc.text(`Presupuesto Inicial: ${formatCurrency(currentInventory.initialAmount)}`, 20, 47);
+        doc.text(`Total de Productos: ${currentInventory.products.length}`, 20, 54);
+        doc.text(`Fecha del Informe: ${new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}`, 20, 61);
+
+        // Preparar datos para la tabla de productos
+        const tableColumn = ["Producto", "Categoría", "SKU", "Stock", "Costo", "Venta", "Vence"];
+        const tableRows = [];
+
+        currentInventory.products.forEach(product => {
+            const productData = [
+                product.name || 'N/A',
+                product.category || 'N/A',
+                product.sku || 'N/A',
+                `${product.stock} ${product.unit || ''}`,
+                formatCurrency(product.cost),
+                formatCurrency(product.salePrice),
+                product.expiryDate || 'N/A'
+            ];
+            tableRows.push(productData);
+        });
+
+        // Generar la tabla de productos con autoTable
+        doc.autoTable(tableColumn, tableRows, {
+            startY: 70, // Inicia la tabla después de la información del inventario
+            headStyles: {
+                fillColor: inventrakColors['darkblue'], // Color de encabezado de tabla
+                textColor: 255, // Texto blanco
+                fontStyle: 'bold',
+                halign: 'center'
+            },
+            styles: {
+                fontSize: 9,
+                cellPadding: 2,
+                valign: 'middle',
+                overflow: 'linebreak'
+            },
+            columnStyles: {
+                0: { cellWidth: 35 }, // Nombre del producto
+                1: { cellWidth: 25 }, // Categoría
+                2: { cellWidth: 20 }, // SKU
+                3: { cellWidth: 20, halign: 'right' }, // Stock
+                4: { cellWidth: 25, halign: 'right' }, // Costo
+                5: { cellWidth: 25, halign: 'right' }, // Venta
+                6: { cellWidth: 20, halign: 'center' } // Vence
+            },
+            margin: { left: 10, right: 10 },
+            didDrawPage: function(data) {
+                // Footer
+                let str = "Página " + doc.internal.getNumberOfPages();
+                doc.setFontSize(10);
+                doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
+            }
+        });
+
+        // Calcular valores resumidos para el pie del informe
+        const totalStockValue = currentInventory.products.reduce((sum, p) => sum + (p.stock * p.cost), 0);
+        const potentialSaleValue = currentInventory.products.reduce((sum, p) => sum + (p.stock * p.salePrice), 0);
+
+        let finalY = doc.autoTable.previous.finalY; // Obtener la posición Y final de la tabla
+
+        doc.setFontSize(12);
+        doc.setTextColor(inventrakColors['text-dark']);
+        doc.text(`Valor Total del Stock (a Costo): ${formatCurrency(totalStockValue)}`, 20, finalY + 20);
+        doc.text(`Valor Potencial de Venta (Stock Actual): ${formatCurrency(potentialSaleValue)}`, 20, finalY + 27);
+        doc.text(`Generado por INVENTRAK`, 20, finalY + 40);
+
+        // Guardar el PDF
+        doc.save(`Reporte_Inventario_${currentInventory.name}_${new Date().toISOString().slice(0, 10)}.pdf`);
+        alert('PDF generado con éxito!');
+        console.log('PDF de inventario generado.');
+    }
+
 
     // --- Funciones de Lógica de la Aplicación ---
 
@@ -1122,7 +1410,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         inventrakData.budget += amount;
 
-        // Asegúrate de que el primer inventario exista para añadir la transacción
         if (inventrakData.inventories.length === 0) {
             inventrakData.inventories.push({
                 id: Date.now(),
@@ -1182,7 +1469,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         inventrakData.budget = newBudget;
 
-        // Asegúrate de que el primer inventario exista para añadir la transacción
         if (inventrakData.inventories.length === 0) {
             inventrakData.inventories.push({
                 id: Date.now(),
@@ -1317,6 +1603,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         inventrakData.inventories = inventrakData.inventories.filter(inv => inv.id !== inventoryId);
+        // También elimina cualquier notificación de vencimiento asociada a este inventario
+        inventrakData.expiredNotifications = inventrakData.expiredNotifications.filter(n => n.inventoryId !== inventoryId);
+
 
         saveInventrakData();
         alert('Inventario eliminado con éxito!');
@@ -1352,7 +1641,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const productUnit = productUnitInput.value.trim();
         const productLocation = productLocationInput.value.trim();
         const productSupplier = productSupplierInput.value.trim();
-        const productExpiryDate = productExpiryDateInput.value;
+        const productExpiryDate = productExpiryDateInput.value; // Ya viene en formato YYYY-MM-DD
 
         if (!productName || isNaN(productCost) || isNaN(productSalePrice) || isNaN(productStock) || productStock < 0) {
             alert('Por favor, completa al menos el Nombre, Costo, Precio de Venta y Cantidad en Stock (debe ser >= 0) del producto con valores válidos.');
@@ -1415,6 +1704,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     lastUpdated: formattedDate
                 };
 
+                // Si el producto editado tiene una fecha de vencimiento y ahora está vencido,
+                // asegúrate de que se registre en las notificaciones (si aún no lo está)
+                const isExpired = productExpiryDate && new Date(productExpiryDate) < now;
+                const isNotified = inventrakData.expiredNotifications.some(
+                    n => n.productId === editingProductId && n.inventoryId === currentInventory.id
+                );
+                if (isExpired && !isNotified) {
+                    inventrakData.expiredNotifications.push({
+                        productId: editingProductId,
+                        inventoryId: currentInventory.id,
+                        dismissed: false
+                    });
+                } else if (!isExpired && isNotified) {
+                    // Si ya no está vencido y estaba notificado, removerlo de las notificaciones
+                    inventrakData.expiredNotifications = inventrakData.expiredNotifications.filter(
+                        n => !(n.productId === editingProductId && n.inventoryId === currentInventory.id)
+                    );
+                }
+
+
                 alert('Producto actualizado con éxito!');
             }
         } else {
@@ -1450,6 +1759,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             inventrakData.budget -= transactionCost;
 
+            // Al añadir un nuevo producto, verifica si ya está vencido
+            const isExpired = productExpiryDate && new Date(productExpiryDate) < now;
+            if (isExpired) {
+                inventrakData.expiredNotifications.push({
+                    productId: newProductId,
+                    inventoryId: currentInventory.id,
+                    dismissed: false
+                });
+            }
+
+
             alert('Producto añadido con éxito!');
         }
 
@@ -1484,10 +1804,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (productUnitInput) productUnitInput.value = productToEdit.unit;
             if (productLocationInput) productLocationInput.value = productToEdit.location;
             if (productSupplierInput) productSupplierInput.value = productToEdit.supplier;
-            if (productExpiryDateInput && productToEdit.expiryDate) {
-                productExpiryDateInput.value = productToEdit.expiryDate;
-            } else if (productExpiryDateInput) {
-                productExpiryDateInput.value = '';
+            // Asegurarse de que la fecha de caducidad se cargue correctamente
+            if (productExpiryDateInput) {
+                productExpiryDateInput.value = productToEdit.expiryDate || '';
             }
 
             if (productForm) productForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1516,8 +1835,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     productId: productId,
                     type: "eliminacion",
                     quantity: productToDelete.stock,
-                    price: productToDelete.stock * productToDelete.salePrice,
-                    totalCost: transactionCost,
+                    price: productToDelete.stock * productToDelete.salePrice, // Valor potencial de venta que se pierde
+                    totalCost: transactionCost, // Costo de adquisición que se perdió
                     date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
                     time: `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`,
                     notes: `Producto eliminado: ${productToDelete.name}`
@@ -1525,6 +1844,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             currentInventory.products = currentInventory.products.filter(p => p.id !== productId);
+            // También elimina cualquier notificación de vencimiento asociada a este producto
+            inventrakData.expiredNotifications = inventrakData.expiredNotifications.filter(
+                n => !(n.productId === productId && n.inventoryId === currentInventory.id)
+            );
 
             saveInventrakData();
             alert('Producto eliminado.');
@@ -1580,13 +1903,20 @@ document.addEventListener('DOMContentLoaded', () => {
             type: "venta",
             quantity: quantityToSell,
             price: saleValue,
-            totalCost: quantityToSell * productToSell.cost,
+            totalCost: quantityToSell * productToSell.cost, // Costo de las unidades vendidas
             date: now.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
             time: `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
             notes: `Venta de ${quantityToSell} unidades de ${productToSell.name}`
         });
 
         inventrakData.budget += saleValue;
+
+        // Si el stock llega a cero y tenía fecha de vencimiento, descartar la notificación de vencimiento
+        if (productToSell.stock === 0) {
+            inventrakData.expiredNotifications = inventrakData.expiredNotifications.filter(
+                n => !(n.productId === productId && n.inventoryId === currentInventory.id)
+            );
+        }
 
         saveInventrakData();
         alert(`Venta de ${quantityToSell} unidades de "${productToSell.name}" registrada.`);
@@ -1642,7 +1972,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log(`Usuario logueado: ${inventrakData.currentUser}`);
         }
 
-        renderDashboard();
+        renderDashboard(); // Se llama a checkForExpiredProducts dentro de renderDashboard
 
         if (openSidebarBtn) openSidebarBtn.addEventListener('click', openSidebar);
         if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', closeSidebar);
@@ -1658,6 +1988,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderInventoriesList();
                 } else if (sectionId === 'dashboard-section') {
                     renderDashboard();
+                } else if (sectionId === 'expirations-section') {
+                    renderExpiredNotifications(); // Asegúrate de que se renderice al entrar
                 }
             });
         });
@@ -1671,6 +2003,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderInventoriesList();
                 } else if (sectionId === 'dashboard-section') {
                     renderDashboard();
+                } else if (sectionId === 'expirations-section') {
+                    renderExpiredNotifications();
                 }
             });
         });
@@ -1742,6 +2076,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+        if (generatePdfBtn) {
+            generatePdfBtn.addEventListener('click', () => {
+                if (selectedInventoryId) {
+                    generateInventoryPdf();
+                } else {
+                    alert('Por favor, selecciona un inventario para generar el PDF.');
+                }
+            });
+        }
 
         if (logoutButton) {
             logoutButton.addEventListener('click', handleLogout);
@@ -1749,12 +2092,8 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('WARN: logoutButton no encontrado.');
         }
 
-        // Mostrar el dashboard si estamos en index.html y no hay una sección específica a mostrar
-        // Esto previene un problema si la página se carga directamente sin un hash en la URL
         const currentSection = document.querySelector('.content-section.active');
         if (!currentSection || currentSection.id === 'settings-section' && !inventrakData.currentUser) {
-            // Si la sección de configuración está activa pero no hay usuario (caso de recarga forzada),
-            // o si ninguna sección está activa, volvemos al dashboard.
             showSection('dashboard-section');
         }
     }

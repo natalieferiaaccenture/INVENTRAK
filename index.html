@@ -35,6 +35,9 @@
     <link rel="stylesheet" href="css/styles.css">
     <!-- Carga D3.js para los gráficos -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- Carga jsPDF para la generación de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body class="bg-gray-100 font-inter flex flex-col min-h-screen">
 
@@ -52,10 +55,9 @@
                 <li><a href="#" data-section="create-inventory" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-plus-circle mr-2 lg:mr-3"></i> Crear Inventario</a></li>
                 <li><a href="#" data-section="view-inventories" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-boxes mr-2 lg:mr-3"></i> Inventarios Creados</a></li>
                 <li class="py-1 lg:py-2 border-t border-gray-300 my-3 lg:my-4"></li>
-                <!-- Secciones de Balance y Averías pueden ser añadidas en el futuro -->
-                <!-- <li><a href="#" data-section="balance" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-balance-scale mr-2 lg:mr-3"></i> Balance</a></li> -->
-                <!-- <li><a href="#" data-section="issues" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-exclamation-triangle mr-2 lg:mr-3"></i> Averías</a></li> -->
-                <li><a href="#" data-section="settings" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-cog mr-2 lg:mr-3"></i>Gráficos y Versión</a></li>
+                <!-- Nuevo: Vencimientos -->
+                <li><a href="#" data-section="expirations" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-calendar-times mr-2 lg:mr-3"></i> Vencimientos</a></li>
+                <li><a href="#" data-section="settings" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-cog mr-2 lg:mr-3"></i> Gráficos y Configuración</a></li>
                 <li><a href="#" id="logout-button" class="sidebar-item block p-2 lg:p-3 rounded-xl hover:bg-inventrak-blue hover:text-white transition duration-200"><i class="fas fa-sign-out-alt mr-2 lg:mr-3"></i> Cerrar Sesión</a></li>
             </ul>
         </nav>
@@ -190,6 +192,10 @@
                     <button id="deleteCurrentInventoryBtn" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-red-600 transition duration-200">
                         <i class="fas fa-trash-alt mr-1"></i> Eliminar Inventario
                     </button>
+                    <!-- Nuevo: Botón Generar PDF -->
+                    <button id="generatePdfBtn" class="bg-gray-700 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-gray-800 transition duration-200">
+                        <i class="fas fa-file-pdf mr-1"></i> Generar PDF
+                    </button>
                 </div>
             </div>
 
@@ -287,18 +293,13 @@
             </div>
         </section>
 
-        <!-- Secciones de Balance General y Averías (placeholders) -->
-        <section id="balance-section" class="content-section hidden space-y-5 lg:space-y-6">
-            <h2 class="text-2xl lg:text-3xl font-bold text-inventrak-text-dark mb-5 lg:mb-6">Balance General (Placeholder)</h2>
+        <!-- Nueva Sección: Vencimientos -->
+        <section id="expirations-section" class="content-section hidden space-y-5 lg:space-y-6">
+            <h2 class="text-2xl lg:text-3xl font-bold text-inventrak-text-dark mb-5 lg:mb-6">Notificaciones de Vencimientos</h2>
             <div class="bg-inventrak-card-bg rounded-2xl p-5 lg:p-6 shadow-lg">
-                <p class="text-inventrak-text-dark text-sm lg:text-base">Aquí se mostrará el balance general de todos los inventarios. (Próximamente)</p>
-            </div>
-        </section>
-
-        <section id="issues-section" class="content-section hidden space-y-5 lg:space-y-6">
-            <h2 class="text-2xl lg:text-3xl font-bold text-inventrak-text-dark mb-5 lg:mb-6">Averías Reportadas (Placeholder)</h2>
-            <div class="bg-inventrak-card-bg rounded-2xl p-5 lg:p-6 shadow-lg">
-                <p class="text-inventrak-text-dark text-sm lg:text-base">Aquí se gestionarán las averías. (Próximamente)</p>
+                <div id="expired-products-list" class="space-y-3 lg:space-y-4">
+                    <p id="no-expired-products-message" class="text-inventrak-text-light text-center text-sm">No hay productos vencidos actualmente.</p>
+                </div>
             </div>
         </section>
 
@@ -328,8 +329,8 @@
             </div>
 
             <div class="bg-inventrak-card-bg rounded-2xl p-5 lg:p-6 shadow-lg">
-                <h3 class="text-xl lg:text-2xl font-semibold text-inventrak-text-dark mb-3 lg:mb-4">Versión</h3>
-                <p class="text-inventrak-text-dark text-sm lg:text-base">1.0</p>
+                <h3 class="text-xl lg:text-2xl font-semibold text-inventrak-text-dark mb-3 lg:mb-4">Otras Configuraciones</h3>
+                <p class="text-inventrak-text-dark text-sm lg:text-base">Opciones de configuración de la aplicación aquí. (Próximamente)</p>
             </div>
         </section>
     </main>
